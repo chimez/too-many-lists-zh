@@ -4,37 +4,25 @@
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>An Introduction To Cursors - Learning Rust With Entirely Too Many Linked Lists</title>
-        
-        
 
 
         <!-- Custom HTML head -->
         
-
-
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="Learning Rust With Entirely Too Many Linked Lists">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
-        
         <link rel="icon" href="favicon.svg">
-        
-        
         <link rel="shortcut icon" href="favicon.png">
-        
         <link rel="stylesheet" href="css/variables.css">
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
-        
         <link rel="stylesheet" href="css/print.css" media="print">
-        
 
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        
         <link rel="stylesheet" href="fonts/fonts.css">
-        
 
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="highlight.css">
@@ -42,9 +30,7 @@
         <link rel="stylesheet" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
-        
 
-        
     </head>
     <body>
         <!-- Provide site root to javascript -->
@@ -103,8 +89,7 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                
-                <div id="menu-bar-hover-placeholder"></div>
+                                <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
                         <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
@@ -120,33 +105,27 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
-                        
                     </div>
 
                     <h1 class="menu-title">Learning Rust With Entirely Too Many Linked Lists</h1>
 
                     <div class="right-buttons">
-                        
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        
-                        
                         <a href="https://github.com/rust-unofficial/too-many-lists" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        
+
                     </div>
                 </div>
 
-                
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -154,7 +133,6 @@
                         </ul>
                     </div>
                 </div>
-                
 
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script type="text/javascript">
@@ -167,110 +145,106 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#an-introduction-to-cursors" id="an-introduction-to-cursors">An Introduction To Cursors</a></h1>
-<p>OK!!! We now have a LinkedList that's on par with std's 1.0 implementation! Which of course means that our LinkedList is <em>still completely useless</em>. We've taken the enormous performance penalty of implementing a Deque as a linked list, <strong>and we don't have any of the APIs that make it actually useful</strong>. </p>
-<p>Here's how we do against the &quot;killer apps&quot; of linked lists:</p>
+                        <h1 id="光标-cursors-简介"><a class="header" href="#光标-cursors-简介">光标 (Cursors) 简介</a></h1>
+<p>好了！！！我们现在有了一个与std的1.0实现相当的LinkedList!  当然，这意味着我们的 LinkedList <em>仍然是完全无用的</em>。我们把 Deque 作为一个链表来实现， 在性能上造成了巨大的损失， <strong>而且我们没有任何API来使其真正有用</strong>。</p>
+<p>下面是我们如何对付链表的 &quot;杀手级应用&quot; 的情况:</p>
 <ul>
-<li>🚫 Getting to do <a href="https://docs.rs/linked-hash-map/latest/linked_hash_map/">weird intrusive stuff</a></li>
-<li>🚫 Getting to do <a href="https://doc.rust-lang.org/std/sync/mpsc/">weird lockfree stuff</a></li>
-<li>🚫 Getting to store <a href="https://doc.rust-lang.org/nomicon/exotic-sizes.html#dynamically-sized-types-dsts">Dynamically Sized Types</a></li>
-<li>🌟 O(1) push/pop without <a href="https://en.wikipedia.org/wiki/Amortized_analysis">amortization</a> (if you are willing to believe that malloc is O(1))</li>
-<li>🚫 O(1) list splitting</li>
-<li>🚫 O(1) list splicing</li>
+<li>🚫 做一些 <a href="https://docs.rs/linked-hash-map/latest/linked_hash_map/">奇怪的侵入性的事情</a></li>
+<li>🚫 做一些 <a href="https://doc.rust-lang.org/std/sync/mpsc/">奇怪的无锁的事情</a></li>
+<li>🚫 存储一些 <a href="https://doc.rust-lang.org/nomicon/exotic-sizes.html#dynamically-sized-types-dsts">动态大小类型</a></li>
+<li>🌟 O(1) push/pop 没有 <a href="https://en.wikipedia.org/wiki/Amortized_analysis">摊销</a> (如果你愿意相信 malloc 是 O(1))</li>
+<li>🚫 O(1) 列表拆分</li>
+<li>🚫 O(1) 列表拼接</li>
 </ul>
-<p>Well... 1 out of 6 is... better than nothing! Do you see why I wanted to rip this thing out of std?</p>
-<p>We're not going to make our list support &quot;weird&quot; stuff, because that's all adhoc and domain-specific. But the splitting and splicing thing, now that's something we can do!</p>
-<p>But here's the problem: actually <em>reaching</em> the k<sup>th</sup> element in a LinkedList takes O(k) time, so how can we <em>possibly</em> do arbitrary splits and merges in O(1)? Well, the trick is that you don't have an API like <code>split_at(index)</code> -- you make a system where the user can statefully iterate to a position in the list and make O(1) modifications at that point!</p>
-<p>Hey, we already have iterators! Can we use them for this? Kind of... but one of their super-powers gets in the way. You may recall that the way that we write out the lifetimes for by-ref iterators means that the references they return <em>aren't</em> tied to the iterator. This lets us repeatedly call <code>next</code> and hold onto the elements:</p>
-<pre><code class="language-rust ignore">let mut list = ...;
+<p>啊…… 六个中的一个只是…… 聊胜于无！ 你看到我为什么想把这个东西从标准库里去掉了吗？</p>
+<p>我们不打算让我们的列表支持 &quot;奇怪&quot; 的东西，因为那都是临时的和特定领域的。但是，分割和拼接的事情，现在是我们可以做的了！。</p>
+<p>但是问题来了：实际上<em>到达</em>LinkedList中的第k个元素需要O(k)的时间，所以我们怎么<em>可能</em>在O(1)中进行任意的拆分和合并？ 诀窍在于，你没有像 &quot;split_at(index)&quot; 那样的API -- 你建立了一个系统，用户可以有状态地迭代到列表中的某个位置，并在该点进行O(1)的修改！</p>
+<p>嘿，我们已经有了迭代器!  我们可以用它们来做这个吗？类似吧......但是它们的一个超级能力妨碍了我们。 你可能还记得，我们为 by-ref 迭代器写出生命周期的方式意味着它们返回的引用 <em>不</em> 与迭代器相联系。这让我们可以重复调用 <code>next</code> 并保持元素的存在:</p>
+<pre><code class="language-rust  ignore">let mut list = ...;
 let iter = list.iter_mut();
 let elem1 = list.next();
 let elem2 = list.next();
 
 if elem1 == elem2 { ... }
 </code></pre>
-<p>If the returned references borrowed the iterator, then this code wouldn't work at all. The compiler would just complain about the second call to <code>next</code>! This flexibility is great, but it puts some implicit constraints on us:</p>
+<p>如果返回的引用借用了迭代器，那么这段代码就根本无法工作。编译器会抱怨对<code>next</code>的第二次调用! 这种灵活性很好，但它给我们带来了一些隐含的限制:</p>
 <ul>
 <li>
-<p>By-Mutable-Ref Iterators can never go backwards and yield an element again, because the user would be able to get two <code>&amp;mut</code>'s to the same element, breaking fundamental rules of the language.</p>
+<p>By-Mutable-Ref 迭代器不能往回走，不能再次产生同一个元素，因为用户可以对同一个元素进行两次<code>&amp;mut</code>，从而破坏了语言的基本规则。</p>
 </li>
 <li>
-<p>By-Ref Iterators can't have extra methods which could possibly modify the underlying collection in a way that would invalidate any reference that has already been yielded.</p>
+<p>By-Ref 迭代器不能有额外的方法，这些方法可能会修改底层集合，从而使任何已经产生的引用无效。</p>
 </li>
 </ul>
-<p>Unfortunately, both of these things are <em>exactly</em> what we want our LinkedList API to do! So we can't just use iterators, we need something new: <em>Cursors</em>.</p>
-<p>Cursors are exactly like the little blinking <code>|</code> you get when you're editing some text on a computer. It's a position in a sequence (the text) that you can move around (with the arrow keys), and whenever you type the edits happen at that point.</p>
-<p>See if I just</p>
-<p>press</p>
-<p>enter</p>
-<p>the whole</p>
-<p>text</p>
-<p>gets broken in half.</p>
-<p>Sorry you're standing behind me and watching me type this right? So that totally makes sense, right? Right.</p>
-<p>Now if you've ever had the misfortune of having a keyboard with an &quot;insert&quot; key and actually pressed it, you know that there's actually technically two interpretations of cursors: they can either lie between elements (characters) or <em>on</em> elements. I'm pretty sure no one has ever pressed &quot;insert&quot; on purpose in their life, and that it exists purely as a Suffering Button, so it's pretty obvious which one is Better and Right: cursors go between elements!</p>
-<p>Pretty rock-solid logic right there, I don't think anyone can disagree with me.</p>
-<p>Sorry what? There was an <a href="https://github.com/rust-lang/rfcs/blob/master/text/2570-linked-list-cursors.md">RFC in 2018 to add Cursors to Rust's LinkedList</a>?</p>
+<p>不幸的是，这两件事<em>正是</em>我们希望我们的LinkedList API所要做的。所以我们不能仅仅使用迭代器，我们需要新的东西。<em>光标</em> (cursors)。</p>
+<p>光标就像你在电脑上编辑文本时得到的闪烁的小<code>|</code>。 它是一个序列（文本）中的一个位置，你可以在这个位置上移动（用方向键），每当你打字的时候，编辑就发生在这个点上。</p>
+<p>看，如果我只是</p>
+<p>按</p>
+<p>回车</p>
+<p>整个</p>
+<p>文本</p>
+<p>就会被打成两半。</p>
+<p>对不起，你正站在我身后看着我打这个字，对吗？所以这完全说得通，对吗？是的。</p>
+<p>现在，如果你曾经不幸拥有一个带有 &quot;插入&quot; 键的键盘，并且真的按了它，你就会知道，从技术上讲，对光标有两种解释： 它们可以位于元素（字符）之间，也可以位于 元素 <em>上</em> 。 我敢肯定，没有人在他们的生活中故意按过 &quot;插入&quot; 键，它纯粹是作为一个痛苦的按钮而存在的，所以很明显哪一个是更好的和正确的：光标位于元素之间！这是个很好的逻辑。</p>
+<p>坚如磐石的逻辑就在这里，我想没有人能够反对我的观点。</p>
+<p>对不起, 什么？有一个<a href="https://github.com/rust-lang/rfcs/blob/master/text/2570-linked-list-cursors.md">2018年的RFC，为Rust的LinkedList添加光标</a>？</p>
 <blockquote>
-<p>With a Cursor one can seek back and forth through a list and get the current element. With a CursorMut One can seek back and forth and get mutable references to elements, and it can insert and delete elements before and behind the current element (along with performing several list operations such as splitting and splicing).</p>
+<p>通过游标，人们可以在一个列表中来回寻找并获得当前元素。使用CursorMut，人们可以来回寻找并获得对元素的可变引用，它可以在当前元素之前和之后插入和删除元素（同时执行一些列表操作，如分割和拆分）。</p>
 </blockquote>
-<p><em>Current element</em>? This cursor is <em>on</em> elements, not between them! I can't believe they didn't accept my totally rock-solid argument! So yeah you can just go use the Cursor in std... wait, it's <a href="https://doc.rust-lang.org/1.60.0/std/collections/linked_list/struct.CursorMut.html">2022, and Rust 1.60 still has Cursor marked as unstable</a>?</p>
-<p>Hey wait:</p>
+<p><em>当前元素</em>？这个游标是在元素<em>上</em>的，而不是在元素之间的! 我不相信他们不接受我那完全坚如磐石的论点！ 我不相信他们不接受。所以是的，你可以直接去使用std中的Cursor......等等，现在是 <a href="https://doc.rust-lang.org/1.60.0/std/collections/linked_list/struct.CursorMut.html">2022年，而Rust 1.60仍然将Cursor标记为不稳定</a>?</p>
+<p>嘿，等等:</p>
 <blockquote>
-<p>Cursors always rest between two elements in the list, and index in a logically circular way. To accommodate this, there is a &quot;ghost&quot; non-element that yields None between the head and tail of the list.</p>
+<p>游标总是停留在列表的两个元素之间，并以逻辑上的循环方式进行索引。为了适应这一点，在列表的头部和尾部之间有一个 &quot;幽灵&quot; 非元素，产生 None。</p>
 </blockquote>
-<p>HEY WAIT. This is the opposite of what the RFC says??? But wait all the docs on the methods still refer to &quot;current&quot; elements... wait hold on, where have I seen this ghost stuff before. Oh wait, didn't I do that in <a href="https://docs.rs/linked-list/0.0.3/linked_list/struct.Cursor.html">my old linked-list fork</a> where I prototyped?</p>
+<p>嘿，等等。这与 RFC 所说的正好相反??? 但是等一下，所有关于这些方法的文档仍然提到 &quot;当前&quot; 元素......等一下，我在哪里看到过这个鬼东西。哦，等等，我不是在<a href="https://docs.rs/linked-list/0.0.3/linked_list/struct.Cursor.html">我的老linked-list fork</a>中做过吗，在那里我做了原型？</p>
 <blockquote>
-<p>Cursors always rest between two elements in the list, and index in a logically circular way. To accomadate this, there is a &quot;ghost&quot; non-element that yields None between the head and tail of the List.</p>
+<p>游标总是停留在列表的两个元素之间，并以逻辑上的循环方式进行索引。为了适应这种情况，在列表的头部和尾部之间有一个 &quot;幽灵 &quot;非元素，产生 None。</p>
 </blockquote>
-<p>Hold up what the fuck. This isn't a gag, I am actually trying to Read The Docs right now. Did std actually RFC a different design from the one I proposed in 2015, but then copy-paste the docs from my prototype??? Is std meta-shitposting me for writing a book about how much I hate LinkedList????? Like yeah I built that prototype to demonstrate the concept so that people would let me add it to std and make LinkedList not useless but, qu'est-ce que le fuck??????????????</p>
-<p>Ok you know what, clearly std is blessing my design as the objectively superior one, so we're going to do my design. Also that's nice because this entire chapter is me actually literally rewriting that library from scratch, so not changing the API sounds Good To Me!</p>
-<p>Here's the full top-level docs I wrote:</p>
+<p>等一下，这他妈的是什么？这不是插科打诨，我现在确实在努力阅读文档。难道std实际上RFC的设计与我在2015年提出的设计不同，但又从我的原型中复制粘贴了文档？ std 是否因为我写了一本关于我有多讨厌 LinkedList 的书而对我进行了meta-shit posted????? 好像是的，我建立了那个原型来证明这个概念，这样人们就会让我把它添加到std中，让LinkedList不至于一无是处，但是，这就是他妈的??????????????。</p>
+<p>好吧，你知道吗，很明显，std 认为我的设计是客观上优越的，所以我们要做我的设计。这也很好，因为这一章实际上是我从头开始重写了那个库，所以不改变API对我来说听起来很好！</p>
+<p>下面是我写的完整的顶层文档:</p>
 <blockquote>
-<p>A Cursor is like an iterator, except that it can freely seek back-and-forth, and can safely mutate the list during iteration. This is because the lifetime of its yielded references are tied to its own lifetime, instead of just the underlying list. This means cursors cannot yield multiple elements at once.</p>
-<p>Cursors always rest between two elements in the list, and index in a logically circular way. To accomadate this, there is a &quot;ghost&quot; non-element that yields None between the head and tail of the List.</p>
-<p>When created, cursors start between the ghost and the front of the list. That is, next will yield the front of the list, and prev will yield None. Calling prev again will yield the tail.</p>
+<p>光标就像一个迭代器，只是它可以自由地来回寻找，并且可以在迭代过程中安全地改变列表。这是因为它产生的引用的寿命与它自己的寿命有关，而不仅仅是与底层列表有关。这意味着光标不能一次产生多个元素。</p>
+<p>游标总是停留在列表的两个元素之间，并以逻辑上的循环方式进行索引。为了适应这种情况，在列表的头部和尾部之间有一个 &quot;幽灵&quot; 非元素，产生 None。</p>
+<p>当创建时，光标从幽灵和列表的前面开始。也就是说，next 将产生列表的前面，prev 将产生 None。再次调用 prev 将产生尾部。</p>
 </blockquote>
-<p>Cute, even though we concluded that the whole &quot;sentinel-node&quot; thing was more trouble than it's worth, we're still going to end up with semantics that &quot;pretend&quot; there's a sentinel node so that the cursor can wrap around to the other side of the list.</p>
-<p><em>Skims over my old APIs some more</em></p>
-<pre><code class="language-rust ignore">fn splice(&amp;mut self, other: &amp;mut LinkedList&lt;T&gt;)
+<p>很可爱，尽管我们得出结论，整个 &quot;哨兵节点&quot; 的事情比它的价值更麻烦，我们仍然要用语义来 &quot;假装&quot; 有一个哨兵节点，这样光标就可以绕到列表的另一边了。</p>
+<p><em>对我的旧API再进行一些分析</em></p>
+<pre><code class="language-rust  ignore">fn splice(&amp;mut self, other: &amp;mut LinkedList&lt;T&gt;)
 </code></pre>
 <blockquote>
-<p>Inserts the entire list's contents right after the cursor.</p>
+<p>在光标之后插入整个列表的内容。</p>
 </blockquote>
-<p>Oh yeah, this is coming back to me. I wrote this when I was really mad about combinatoric explosion, and was trying to come up with a way for there to only be one copy of each operation. Unfortunately this is... semantically problematic. See, when the user wants to splice one list into another, they might want the cursor to end up <em>before</em> the splice or <em>after it</em>. The inserted list can be arbitrarily large, so it's a genuine issue for us to only allow for one and expect the user to walk over the entire inserted list!</p>
-<p>We're gonna have to rework this design from the ground up after all. What does our Cursor type need? Well it needs to:</p>
+<p>哦，对了，这又回到我身上了。我写这个的时候，我对组合爆炸非常生气，并试图想出一种方法，使每个操作只有一个副本。不幸的是，这......在语义上是有问题的。你看，当用户想把一个列表拼接到另一个列表时，他们可能希望光标在拼接<em>之前</em>或<em>之后</em>结束。插入的列表可以是任意大的，所以如果我们只允许一个列表，并希望用户在整个插入的列表上行走，这确实是个问题！我们必须重新设计。</p>
+<p>我们毕竟要从头开始重新设计这个设计。我们的光标类型需要什么？嗯，它需要:</p>
 <ul>
-<li>point &quot;between&quot; two elements</li>
-<li>as a nice little feature, keep track of what &quot;index&quot; is next</li>
-<li>update the list itself to modify front/back/len. </li>
+<li>指向两个元素&quot;之间&quot;</li>
+<li>作为一个很好的小功能，跟踪下一个 &quot;索引&quot; 是什么</li>
+<li>更新列表本身以修改 front/back/len。</li>
 </ul>
-<p>How do you point between two elements? Well, you don't. You just point at the &quot;next&quot; element. So, yeah even though we're exposing &quot;cursor goes in-between&quot; semantics, we're really implementing it as &quot;cursor is on&quot;, and just pretending everything happens before or after that point.</p>
-<p>But there's a reason! The splice use-case wants to let the user choose whether they end up before or after the list, but this is... <em>horribly</em> complicated to express with the std API! They have splice_after and splice_before, but neither changes the cursor's position, so really you'd need splice_after_before and splice_after_after...</p>
-<p>Wait no I'm being silly. In the std API you can just choose the node you want to end up on, and then use splice_after/before as appropriate.</p>
-<p><em>squints</em></p>
-<p>Wait is the std API actually good.</p>
-<p><em>skims through the code</em></p>
-<p>Ok the std API is actually good.</p>
-<p>Alright screw it, we're going to <a href="https://github.com/rust-lang/rfcs/blob/master/text/2570-linked-list-cursors.md">implement the RFC</a>. Or at least the interesting parts of it.</p>
-<p>I have my quibbles with some of the terminology std uses, but cursors are always going to be a bit brain-melty: <code>iter().next_back()</code>  gets you <code>back()</code>, so that's good, but then each subsequent <code>next_back()</code> is actually bringing you <em>closer to the front</em> and indeed, every pointer we follow is a &quot;front&quot; pointer! If I think about this seeming-paradox too much it hurts my brain, so, I can certainly respect going for different terminology to avoid this.</p>
-<p>The std API talks about operations before &quot;before&quot; (towards the front) and &quot;after&quot; (towards the back), and instead of <code>next</code> and <code>next_back</code>, it... calls things <code>move_next</code> and <code>move_prev</code>. HRM. Ok so they're getting into a bit of the iterator terminology, but at least <code>next</code> doesn't evoke front/back, and helps you orient how things behave compared to the iterators.</p>
-<p>We can work with this.</p>
+<p>你如何指向两个元素之间？嗯，你不需要。你只是指向 &quot;下一个&quot; 元素。所以，是的，即使我们暴露了 &quot;光标在中间&quot; 的语义，我们实际上是把它实现为 &quot;光标在元素上&quot;，只是假装一切都发生在那个点之前或之后。</p>
+<p>但这是有原因的! 拼接的用例希望让用户选择他们是在列表的前面还是后面结束，但是这... 用标准的API来表达是<em>非常</em>复杂的!  他们有 splice_after 和 splice_before, 但都没有改变光标的位置，所以实际上你需要 splice_after_before 和 splice_after_after ...</p>
+<p>等等，不，我太傻了。在标准的API中，你可以只选择你想结束的节点，然后根据情况使用 splice_after/before。</p>
+<p><em>斜眼</em></p>
+<p>等等，标准的API实际上是好的。</p>
+<p><em>仔细阅读代码</em></p>
+<p>好吧，标准的API实际上是好的。</p>
+<p>好吧，去它的，我们要去<a href="https://github.com/rust-lang/rfcs/blob/master/text/2570-linked-list-cursors.md">实现RFC</a>。或者至少是它的有趣部分。</p>
+<p>我对 std 使用的一些术语有异议，但光标总是有点令人费解：<code>iter().next_back()</code>让你<code>back()</code>，这很好，但随后的每一个<code>next_back()</code>实际上是让你<em>接近前面</em>，事实上，我们跟踪的每个指针都是一个 &quot;前面&quot; 指针 如果我对这个看似矛盾的问题想得太多，就会伤害我的大脑，所以，我当然尊重用不同的术语来避免这个问题。</p>
+<p>std API谈到了在 &quot;前&quot;（朝前）和  &quot;后&quot;（朝后）的操作，而不是<code>next</code>和<code>next_back</code>，它...称之为<code>move_next</code>和<code>move_prev</code>。嗯。好吧，他们有点陷入了迭代器的术语，但至少<code>next</code>没有唤起front/back，并且能帮助你确定与迭代器类似事物的行为。</p>
+<p>我们可以接受这个。</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                        
                             <a rel="prev" href="sixth-send-sync.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                        
 
-                        
                             <a rel="next" href="sixth-cursors-impl.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
-                        
 
                         <div style="clear: both"></div>
                     </nav>
@@ -278,49 +252,35 @@ if elem1 == elem2 { ... }
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                
                     <a rel="prev" href="sixth-send-sync.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                
 
-                
                     <a rel="next" href="sixth-cursors-impl.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
-                
             </nav>
 
         </div>
 
-        
 
-        
 
-        
 
-        
         <script type="text/javascript">
             window.playground_copyable = true;
         </script>
-        
 
-        
 
-        
         <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        
 
         <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
         <script src="book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
-        
 
-        
 
     </body>
 </html>

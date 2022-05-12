@@ -4,37 +4,25 @@
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>Implementing Cursors - Learning Rust With Entirely Too Many Linked Lists</title>
-        
-        
 
 
         <!-- Custom HTML head -->
         
-
-
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="Learning Rust With Entirely Too Many Linked Lists">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
-        
         <link rel="icon" href="favicon.svg">
-        
-        
         <link rel="shortcut icon" href="favicon.png">
-        
         <link rel="stylesheet" href="css/variables.css">
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
-        
         <link rel="stylesheet" href="css/print.css" media="print">
-        
 
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        
         <link rel="stylesheet" href="fonts/fonts.css">
-        
 
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="highlight.css">
@@ -42,9 +30,7 @@
         <link rel="stylesheet" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
-        
 
-        
     </head>
     <body>
         <!-- Provide site root to javascript -->
@@ -103,8 +89,7 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                
-                <div id="menu-bar-hover-placeholder"></div>
+                                <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
                         <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
@@ -120,33 +105,27 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
-                        
                     </div>
 
                     <h1 class="menu-title">Learning Rust With Entirely Too Many Linked Lists</h1>
 
                     <div class="right-buttons">
-                        
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        
-                        
                         <a href="https://github.com/rust-unofficial/too-many-lists" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        
+
                     </div>
                 </div>
 
-                
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -154,7 +133,6 @@
                         </ul>
                     </div>
                 </div>
-                
 
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script type="text/javascript">
@@ -167,26 +145,26 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#implementing-cursors" id="implementing-cursors">Implementing Cursors</a></h1>
-<p>Ok so we're only going to bother with std's CursorMut because the immutable version isn't actually interesting. Just like my original design, it has a &quot;ghost&quot; element that contains None to indicate the start/end of the list, and you can &quot;walk over it&quot; to wrap around to the other side of the list. To implement it, we're going to need:</p>
+                        <h1 id="实现光标"><a class="header" href="#实现光标">实现光标</a></h1>
+<p>好的，所以我们只打算用std的CursorMut来处理，因为不可变的版本实际上并不有趣。就像我最初的设计一样，它有一个包含None的 &quot;幽灵&quot; 元素来表示列表的开始/结束，你可以 &quot;走过它&quot; 来环绕到列表的另一边。为了实现它，我们将需要:</p>
 <ul>
-<li>A pointer to the current node</li>
-<li>A pointer to the list</li>
-<li>The current index</li>
+<li>一个指向当前节点的指针</li>
+<li>一个指向列表的指针</li>
+<li>当前的索引</li>
 </ul>
-<p>Wait what's the index when we point at the &quot;ghost&quot;? </p>
-<p><em>furrows brow</em> ... <em>checks std</em> ... <em>dislikes std's answer</em></p>
-<p>Ok so quite reasonably <code>index</code> on a Cursor returns an <code>Option&lt;usize&gt;</code>. The std implementation does a bunch of junk to avoid storing it as an Option but... we're a linked list, it's fine. Also std has the cursor_front/cursor_back stuff which starts the cursor on the front/back elements, which feels intuitive, but then has to do something weird when the list is empty.</p>
-<p>You can implement that stuff if you want, but I'm going to cut down on all the repetitive gunk and corner cases and just make a bare <code>cursor_mut</code> method that starts at the ghost, and people can use move_next/move_prev to get the one they want (and then you can wrap that up as cursor_front if you really want).</p>
-<p>Let's get cracking:</p>
-<pre><code class="language-rust ignore">pub struct CursorMut&lt;'a, T&gt; {
+<p>等等，当我们指向 &quot;幽灵&quot; 的时候，索引是什么？</p>
+<p><em>眉头紧皱</em> ... <em>检查std</em> ... <em>不喜欢std的答案</em></p>
+<p>好吧，很合理地，游标上的<code>index</code>返回一个<code>Option&lt;usize&gt;</code>。std的实现做了一堆垃圾来避免将其存储为一个Option，但是......我们是一个链表，这很好。std 也有  cursor_front/cursor_back 的东西，它在前面/后面的元素上启动光标，这感觉很直观，但是当列表为空时，必须做一些奇怪的事情。</p>
+<p>如果你想的话，你可以实现这些东西，但是我打算减少所有重复的垃圾和极端的情况，只做一个光秃秃的<code>cursor_mut</code>方法，从幽灵开始，人们可以使用 move_next/move_prev 来获得他们想要的（如果你真的想的话，你可以把它包起来作为cursor_front）。</p>
+<p>让我们开始行动吧:</p>
+<pre><code class="language-rust  ignore">pub struct CursorMut&lt;'a, T&gt; {
     cur: Link&lt;T&gt;,
     list: &amp;'a mut LinkedList&lt;T&gt;,
     index: Option&lt;usize&gt;,
 }
 </code></pre>
-<p>Pretty straight-forward, one field for each item of our bulleted list! Now the <code>cursor_mut</code> method:</p>
-<pre><code class="language-rust ignore">impl&lt;T&gt; LinkedList&lt;T&gt; {
+<p>很直接，我们的列表中的每一个项目都有一个字段。现在是<code>cursor_mut</code>方法:</p>
+<pre><code class="language-rust  ignore">impl&lt;T&gt; LinkedList&lt;T&gt; {
     pub fn cursor_mut(&amp;mut self) -&gt; CursorMut&lt;T&gt; {
         CursorMut { 
             list: self, 
@@ -196,8 +174,8 @@
     }
 }
 </code></pre>
-<p>Since we're starting at the ghost, we can just start with everything as None, nice and simple! Next, movement:</p>
-<pre><code class="language-rust ignore">impl&lt;'a, T&gt; CursorMut&lt;'a, T&gt; {
+<p>既然我们从幽灵开始，我们就可以从一切都 None 开始，很好，很简单! 接下来是移动：</p>
+<pre><code class="language-rust  ignore">impl&lt;'a, T&gt; CursorMut&lt;'a, T&gt; {
     pub fn index(&amp;self) -&gt; Option&lt;usize&gt; {
         self.index
     }
@@ -224,15 +202,15 @@
     }
 }
 </code></pre>
-<p>So there's 4 interesting cases:</p>
+<p>所以有4种有趣的情况。</p>
 <ul>
-<li>The normal case</li>
-<li>The normal case, but we reach the ghost</li>
-<li>The ghost case, where we go to the front of the list</li>
-<li>The ghost case, but the list is empty, so do nothing</li>
+<li>正常的情况</li>
+<li>正常的情况，但我们到达了幽灵的位置</li>
+<li>幽灵的情况，我们走到了列表的前面</li>
+<li>幽灵的情况，但是列表是空的，所以什么都不做</li>
 </ul>
-<p>move_prev is the exact same logic, but with front/back inverted and the indexing changes inverted:</p>
-<pre><code class="language-rust ignore">pub fn move_prev(&amp;mut self) {
+<p>move_prev 是完全相同的逻辑，但是前后颠倒了，索引变化也颠倒了:</p>
+<pre><code class="language-rust  ignore">pub fn move_prev(&amp;mut self) {
     if let Some(cur) = self.cur {
         unsafe {
             // We're on a real element, go to its previous (front)
@@ -253,9 +231,9 @@
     }
 }
 </code></pre>
-<p>Next let's add some methods to look at the elements around the cursor: current, peek_next, and peek_prev. <strong>A Very Important Note:</strong> these methods must borrow our cursor by <code>&amp;mut self</code>, and the results must be tied to that borrow. We cannot let the user get multiple copies of a mutable reference, and we cannot let them use any of our insert/remove/split/splice APIs while holding onto such a reference!</p>
-<p>Thankfully, this is the default assumption rust makes when you use lifetime elision, so, we will just do the right thing by default!</p>
-<pre><code class="language-rust ignore">pub fn current(&amp;mut self) -&gt; Option&lt;&amp;mut T&gt; {
+<p>接下来让我们添加一些方法来查看光标周围的元素：current, peek_next, 和 peek_prev。**非常重要的标注：**这些方法必须通过<code>&amp;mut self</code> 来借用我们的光标，而且结果必须与该借用相联系。我们不能让用户得到一个可变引用的多个副本，也不能让他们在抓着这样的引用时使用我们的任何插入/删除/拆分/分片的API!</p>
+<p>值得庆幸的是，当你使用生命周期消除时，这是Rust的默认假设，所以，我们将默认做正确的事情!</p>
+<pre><code class="language-rust  ignore">pub fn current(&amp;mut self) -&gt; Option&lt;&amp;mut T&gt; {
     unsafe {
         self.cur.map(|node| &amp;mut (*node.as_ptr()).elem)
     }
@@ -277,40 +255,40 @@ pub fn peek_prev(&amp;mut self) -&gt; Option&lt;&amp;mut T&gt; {
     }
 }
 </code></pre>
-<p>Head empty, Option methods and (omitted) compiler errors do all thinking now. I was skeptical about the <code>Option&lt;NonNull&gt;</code> stuff, but, god damn it really just lets me autopilot this code. I've spent way too much time writing array-based collections where you never get to use Option, wow this is nice! (<code>(*node.as_ptr())</code> is still miserable but, that's just Rust's raw pointers for you...)</p>
-<p>Next we have a choice: we can either jump right to split and splice, the entire point of these APIs, or we can take a baby-step with single element insert/remove. I have a feeling we're just going to want to implement insert/remove in terms of split and splice so... let's just do those first and see where the cards fall (genuinely have no idea as I type this).</p>
-<h1><a class="header" href="#split" id="split">Split</a></h1>
-<p>First up, split_before and split_after, which return everything before/after the current element as a LinkedList (stopping at the ghost element, unless you're at the ghost, in which case we just return the whole List and the cursor now points to an empty list):</p>
-<p><em>squints</em> ok this one is actually some non-trivial logic so we're going to have to talk it out one step at a time.</p>
-<p>I see 4 potentially interesting cases for split_before:</p>
+<p>头部为空，Option 方法和（省略的）编译器错误现在都在思考。我对<code>Option&lt;NonNull&gt;</code>的东西持怀疑态度，但是，该死的它真的让我自动驾驶这段代码。 我花了太多的时间来写基于数组的数据结构，在那里你从来没有使用过Option，哇，这真好！&quot;。(<code>(*node.as_ptr())</code>还是很惨的，但是，这只是Rust的原始指针...)</p>
+<p>接下来我们有一个选择：我们可以直接跳到分割和拼接，这就是这些API的全部意义，或者我们可以在单元素插入/移除方面采取一个小步骤。我有一种感觉，我们只是想在分割和拼接方面实现插入/删除，所以......让我们先做这些，看看结果如何（当我写到这里的时候，我真的不知道）。</p>
+<h1 id="拆分"><a class="header" href="#拆分">拆分</a></h1>
+<p>首先是 split_before 和 split_after, 它们将当前元素之前/之后的所有内容作为 LinkedList 返回（在幽灵元素处停止，除非你在幽灵处，在这种情况下，我们只是返回整个List，并且光标现在指向一个空列表）。</p>
+<p><em>斜眼看</em> 好的，这个实际上是一些不简单的逻辑，所以我们必须一步一步地谈出来。</p>
+<p>我看到split_before有4种潜在的有趣情况。</p>
 <ul>
-<li>The normal case</li>
-<li>The normal case, but prev is the ghost</li>
-<li>The ghost case, where we return the whole list and become empty</li>
-<li>The ghost case, but the list is empty, so do nothing and return the empty list</li>
+<li>正常情况</li>
+<li>正常情况，但prev是幽灵</li>
+<li>幽灵情况，我们返回整个列表，成为空的。</li>
+<li>幽灵情况，但是列表是空的，所以什么都不做，返回空列表</li>
 </ul>
-<p>Let's start with the corner cases. The third case I believe is just</p>
+<p>让我们从极端情况开始。第三种情况我认为就是</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>mem::replace(self.list, LinkedList::new())
 <span class="boring">}
 </span></code></pre></pre>
-<p>Right? We become empty, we return the whole list, and our fields were already None, so nothing to update. Nice. Oh hey, this also Does The Right Thing on the fourth case too!</p>
-<p>So now the normal cases... ok I'm going to need some ASCII diagrams for this. In the most general case, we have something like this:</p>
+<p>对吗？我们变成了空的，我们返回整个列表，而且我们的字段已经是 None，所以没有什么可更新的。很好。哦，嘿嘿，这也是在第四种情况下做的正确的事情!</p>
+<p>现在是正常情况......好吧，我需要一些ASCII图来说明。在最一般的情况下，我们有这样的东西:</p>
 <pre><code class="language-text">list.front -&gt; A &lt;-&gt; B &lt;-&gt; C &lt;-&gt; D &lt;- list.back
                           ^
                          cur
 </code></pre>
-<p>And we want to produce this:</p>
+<p>而我们想要产生这个:</p>
 <pre><code class="language-text">list.front -&gt; C &lt;-&gt; D &lt;- list.back
               ^
              cur
 
 return.front -&gt; A &lt;-&gt; B &lt;- return.back
 </code></pre>
-<p>So we need to break the link between cur and prev, and... god so much needs to change. Ok I just need to break this up into steps so I can convince myself it makes sense. This will be a bit over-verbose but I can at least make sense of it:</p>
-<pre><code class="language-rust ignore">pub fn split_before(&amp;mut self) -&gt; LinkedList&lt;T&gt; {
+<p>所以我们需要打破cur和prev之间的联系，而且......上帝啊，需要改变的东西太多了。好吧，我只需要把这分成几个步骤，这样我就能说服自己这是有意义的。这将是一个有点过于冗长，但我至少可以让它有意义:</p>
+<pre><code class="language-rust  ignore">pub fn split_before(&amp;mut self) -&gt; LinkedList&lt;T&gt; {
     if let Some(cur) = self.cur {
         // We are pointing at a real element, so the list is non-empty.
         unsafe {
@@ -356,42 +334,42 @@ return.front -&gt; A &lt;-&gt; B &lt;- return.back
     }
 }
 </code></pre>
-<p>Note that this if-let is handling the &quot;normal case, but prev is the ghost&quot; situation:</p>
-<pre><code class="language-rust ignore">if let Some(prev) = prev {
+<p>注意：这些 if-let 处理“正常情况，但是 prev 是幽灵” 的情况:</p>
+<pre><code class="language-rust  ignore">if let Some(prev) = prev {
     (*cur.as_ptr()).front = None;
     (*prev.as_ptr()).back = None;
 }
 </code></pre>
-<p>If <em>you</em> want to, you can squash that all together and apply optimizations like:</p>
+<p>如果<em>你</em>想，你可以把这一切都压缩住，然后做优化，比如:</p>
 <ul>
-<li>fold the two accesses to <code>(*cur.as_ptr()).front</code> as just <code>(*cur.as_ptr()).front.take()</code> </li>
-<li>note that new_back is a noop, and just remove both</li>
+<li>把两次访问 <code>(*cur.as_ptr()).front</code> 写成 <code>(*cur.as_ptr()).front.take()</code> </li>
+<li>注意，new_back 是一个 noop ，并删除这两个</li>
 </ul>
-<p>As far as I can tell, everything else just incidentally Does The Right Thing otherwise. We'll see when we write tests! (copy-paste to make split_after)</p>
-<p>I am done Making Mistakes and I am just going to try to write the most foolproof code I can. This is how I <em>actually</em> write collections: just break things down into trivial steps and cases until it can fit in my head and seems foolproof. Then write a ton of tests until I'm convinced I didn't manage to mess it up still.</p>
-<p>Because most of the collections work I've done is <em>extremely unsafe</em> I don't generally get to rely on the compiler catching mistakes, and miri didn't exist back in the day! So I just need to squint at a problem until my head hurts and try my hardest to Never Ever Ever Make A Mistake.</p>
-<p>Don't write Unsafe Rust Code! Safe Rust is so much better!!!!</p>
-<h1><a class="header" href="#splice" id="splice">Splice</a></h1>
-<p>Just one more boss to fight, splice_before and splice_after, which I expect to be the corner-casiest one of them all. The two functions <em>take in</em> a LinkedList and grafts its contents into outrs. Our list could be empty, their list could be empty, we've got ghosts to deal with... <em>sigh</em> let's just take it one step at a time with splice_before.</p>
+<p>就我所知，其他的都是顺便做了正确的事情。当我们写测试时，我们会看到! (复制粘贴实现 split_after)</p>
+<p>我已经不再犯错了，我只想尽力写出最完美的代码。这就是我<em>实际</em>写数据结构的方法：只是把事情分解成琐碎的步骤和案例，直到它能在我的脑海中出现，并且看起来万无一失。然后写一大堆的测试，直到我确信我没有把它搞乱。</p>
+<p>因为我所做的大多数数据结构工作都是<em>极端不安全的</em>，我一般不会依靠编译器来捕捉错误，而 Miri 在当时并不存在！所以我只需要眯着眼睛看，直到我头疼，并尽力做到永远不犯错。</p>
+<p>不要写不安全的Rust代码! 安全的Rust是如此的好!!!!</p>
+<h1 id="拼接"><a class="header" href="#拼接">拼接</a></h1>
+<p>只剩下一个boss要打，就是 splice_before 和 splice_after，我预期这是最棘手的。这两个函数 <em>接收</em> 一个 LinkedList, 并将其内容移植到 outrs 中。我们的列表可能是空的，他们的列表可能是空的，我们有鬼魂要处理......。<em>叹气</em> 让我们用 splice_before 一步步来吧.</p>
 <ul>
-<li>If their list is empty, we don't need to do anything. </li>
-<li>If our list is empty, then our list just becomes their list.</li>
-<li>If we're pointing at the ghost, then this appends to the back (change list.back)</li>
-<li>If we're pointing at the first element (0), this this appends to the front (change list.front)</li>
-<li>In the general case, we do a whole lot of pointer fuckery.</li>
+<li>如果他们的列表是空的，我们就不需要做任何事情。</li>
+<li>如果我们的列表是空的，那么我们的列表就成为他们的列表。</li>
+<li>如果我们指向鬼魂，那么这就会追加到后面（改变list.back）。</li>
+<li>如果我们指向第一个元素(0)，这个就追加到前面(change list.front)</li>
+<li>在正常情况下，我们做一大堆的指针操作。</li>
 </ul>
-<p>The general case is this:</p>
+<p>一般情况下是这样的:</p>
 <pre><code class="language-text">input.front -&gt; 1 &lt;-&gt; 2 &lt;- input.back
 
  list.front -&gt; A &lt;-&gt; B &lt;-&gt; C &lt;- list.back
                      ^
                     cur
 </code></pre>
-<p>Becoming this:</p>
+<p>成为这样:</p>
 <pre><code class="language-text">list.front -&gt; A &lt;-&gt; 1 &lt;-&gt; 2 &lt;-&gt; B &lt;-&gt; C &lt;- list.back
 </code></pre>
-<p>Ok? Ok. Let's write that out... <em>TAKES A HUGE BREATH AND PLUNGES IN</em>:</p>
-<pre><code class="language-rust ignore">    pub fn splice_before(&amp;mut self, mut input: LinkedList&lt;T&gt;) {
+<p>好吗？好的。让我们把它写出来... <em>大口大口地呼吸，然后投身其中</em>:</p>
+<pre><code class="language-rust  ignore">    pub fn splice_before(&amp;mut self, mut input: LinkedList&lt;T&gt;) {
         unsafe {
             if input.is_empty() {
                 // Input is empty, do nothing.
@@ -440,33 +418,33 @@ return.front -&gt; A &lt;-&gt; B &lt;- return.back
         }
     }
 </code></pre>
-<p>Ok this one is genuinely horrendous, and really is feeling that <code>Option&lt;NonNull&gt;</code> pain now. But there's a lot of cleanups we can do. For one, we can pull this code out to the very end, because we always want to do it. I don't <em>love</em>  (although sometimes it's a noop, and setting <code>input.len</code> is more a matter of paranoia about future extensions to the code):</p>
-<pre><code class="language-rust ignore">self.list.len += input.len;
+<p>好吧，这个确实很可怕，现在真的感觉到了<code>Option&lt;NonNull&gt;</code>的痛苦。但是我们可以做很多清理工作。首先，我们可以把这段代码拉到最后，因为我们一直想这么做。我不<em>爱</em>（虽然有时是个noop，而设置<code>input.len</code>更多的是对未来代码扩展的偏执）。</p>
+<pre><code class="language-rust  ignore">self.list.len += input.len;
 input.len = 0;
 </code></pre>
 <blockquote>
-<p>Use of moved value: <code>input</code></p>
+<p>移动值的使用：<code>input</code>。</p>
 </blockquote>
-<p>Ah, right, in the &quot;we're empty&quot; case we're moving the list. Let's replace that with a swap:</p>
-<pre><code class="language-rust ignore">// We're empty, become the input, remain on the ghost
+<p>啊，对了，在 &quot;我们是空的&quot; 情况下，我们正在移动列表。让我们用交换来代替它:</p>
+<pre><code class="language-rust  ignore">// We're empty, become the input, remain on the ghost
 std::mem::swap(self.list, &amp;mut input);
 </code></pre>
-<p>In this case the writes will be pointless, but, they still work (we could probably also early-return in this branch to appease the compiler).</p>
-<p>This unwrap is just a consequence of me thinking about the cases backwards, and can be fixed by making the if-let ask the right question:</p>
-<pre><code class="language-rust ignore">if let Some(0) = self.index {
+<p>在这种情况下，写法将是无指针的，但是，它们仍然可以工作（我们可能也可以在这个分支中提前返回以安抚编译器）。</p>
+<p>这种 unwrap 只是我对案例进行反向思考的结果，可以通过让 if-let 提出正确的问题来解决:</p>
+<pre><code class="language-rust  ignore">if let Some(0) = self.index {
 
 } else {
     let prev = (*cur.as_ptr()).front.unwrap();
 }
 </code></pre>
-<p>Adjusting the index is duplicated inside the branches, so can also be hoisted out:</p>
+<p>调整索引是在分支内部重复进行的，所以也可以取出来:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>*self.index.as_mut().unwrap() += input.len;
 <span class="boring">}
 </span></code></pre></pre>
-<p>Ok, putting that all together we get this:</p>
+<p>好吧，把这一切放在一起，我们得到这个:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -512,7 +490,7 @@ input.len = 0;
 // Input dropped here
 <span class="boring">}
 </span></code></pre></pre>
-<p>Alright this still sucks, but mostly because of -- nope ok just spotted a bug:</p>
+<p>好吧，这仍然很糟糕，但主要是因为 -- 不，好吧，只是发现了一个 bug:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -520,7 +498,7 @@ input.len = 0;
     (*input.front.unwrap().as_ptr()).front = Some(back);
 <span class="boring">}
 </span></code></pre></pre>
-<p>We <code>take</code> input.front and then unwrap it on the next line! <em>sigh</em> and we do the same thing in the equivalent mirror case. We would have caught this instantly in tests, but, we're trying to be Perfect now, and I'm just kinda doing this live, and this is the exact moment where I saw it. This is what I get for not being my usual tedious self and doing things in phases. More explicit!</p>
+<p>我们 <code>take</code> input.front，然后在下一行把它 unwrap! <em>叹气</em>，我们在同样的镜像情况下做同样的事情。 我们本来可以在测试中立即发现这个问题， 但是， 我们现在正在努力做到完美， 而我只是在现场就做这个，这正是我看到它的时刻。这就是我没有像往常一样乏味，分阶段做事情的结果。更加明确!</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -568,10 +546,10 @@ input.len = 0;
 // Input dropped here
 <span class="boring">}
 </span></code></pre></pre>
-<p>Alright now this, this I can tolerate. The only complaints I have are that we don't dedupe in_front/in_back (probably we could rejig our conditions but eh whatever). Really this is basically what you would write in C but with <code>Option&lt;NonNull&gt;</code> gunk making it tedious. I can live with that. Well no we should just make raw pointers better for this stuff. But, out of scope for this book.</p>
-<p>Anyway, I am absolutely exhausted after that, so, <code>insert</code> and <code>remove</code> and all the other APIs can be left as an excercise to the reader. </p>
-<p>Here's the final code for our Cursor with my attempt at copy-pasting the combinatorics. Did I get it right? I'll only find out when I write the next chapter and test this monstrosity!</p>
-<pre><code class="language-rust ignore">pub struct CursorMut&lt;'a, T&gt; {
+<p>好了，现在这个，这个我可以容忍。我唯一的抱怨是，我们没有 in_front/in_back 进行重复计算（也许我们可以重新调整我们的条件，但不管怎样）。真的，这基本上就是你在C语言中写的东西，但是<code>Option&lt;NonNull&gt;</code>的垃圾让它变得很乏味。我可以接受这一点。好吧，我们应该让原始指针更好地用于这些东西。但是，超出了本书的范围。</p>
+<p>总之，我已经精疲力尽了，所以，<code>insert</code> 和 <code>remove</code> 以及所有其他的API可以留给读者作为练习。</p>
+<p>这是我们光标的最终代码，我试图复制粘贴组合代码。我做得对吗？只有当我写下一章并测试这个怪胎时才会知道!</p>
+<pre><code class="language-rust  ignore">pub struct CursorMut&lt;'a, T&gt; {
     list: &amp;'a mut LinkedList&lt;T&gt;,
     cur: Link&lt;T&gt;,
     index: Option&lt;usize&gt;,
@@ -909,17 +887,13 @@ impl&lt;'a, T&gt; CursorMut&lt;'a, T&gt; {
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                        
                             <a rel="prev" href="sixth-cursors-intro.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                        
 
-                        
                             <a rel="next" href="sixth-cursors-testing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
-                        
 
                         <div style="clear: both"></div>
                     </nav>
@@ -927,49 +901,35 @@ impl&lt;'a, T&gt; CursorMut&lt;'a, T&gt; {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                
                     <a rel="prev" href="sixth-cursors-intro.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                
 
-                
                     <a rel="next" href="sixth-cursors-testing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
-                
             </nav>
 
         </div>
 
-        
 
-        
 
-        
 
-        
         <script type="text/javascript">
             window.playground_copyable = true;
         </script>
-        
 
-        
 
-        
         <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        
 
         <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
         <script src="book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
-        
 
-        
 
     </body>
 </html>
