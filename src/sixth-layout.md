@@ -1,28 +1,28 @@
-# Layout
+# 设计
 
-Let us begin by first studying the structure of our enemy. A Doubly-Linked List is conceptually simple, but that's how it decieves and manipulates you. It's the same kind of linked list we've looked at over and over, but the links go both ways. Double the links, double the evil.
+让我们首先研究一下我们的敌人的结构。双向链表在概念上很简单，但这就是它为什么会欺骗和误导你。双向链表就是我们反复看过的那种链表，但链接是双向的。双倍的链接，双倍的邪恶。
 
-So rather than this (gonna drop the Some/None stuff to keep it cleaner):
+所以，相比于单向链表这样 (为了看得更清楚，省略 Some/None 之类的东西):
 
 ```text
 ... -> (A, ptr) -> (B, ptr) -> ...
 ```
 
-We have this:
+现在是这样:
 
 ```text
 ... <-> (ptr, A, ptr) <-> (ptr, B, ptr) <-> ...
 ```
 
-This lets you traverse the list from either direction, or seek back and forth with a [cursor](https://doc.rust-lang.org/std/collections/struct.LinkedList.html#method.cursor_back_mut).
+这让你可以从任何一个方向遍历链表，或者用[cursor](https://doc.rust-lang.org/std/collections/struct.LinkedList.html#method.cursor_back_mut)来回寻找。
 
-In exchange for this flexibility, every node has to store twice as many pointers, and every operation has to fix up way more pointers. It's a significant enough complication that it's a lot easier to make a mistake, so we're going to be doing a lot of testing.
+作为对这种灵活性的代价，每个节点必须存储两倍的指针，每个操作必须考虑更多的指针。这是一个足够复杂的问题，因此更容易出错，所以我们要做大量的测试。
 
-You might have also noticed that I intentionally haven't drawn the *ends* of the list. This is because this is one of the places where there are genuinely defensible options for our implementation. We *definitely* need our implementation to have two pointers: one to the start of the list, and one to the end of the list.
+你可能还注意到，我故意没有画出链表的 *末端*。这是因为末端是我们有正当的理由来选择不同实现方式的地方之一。我们*确信*我们的实现有两个指针：一个指向链表的开始，另一个指向链表的末尾。
 
-There are two notable ways to do this in my mind: "traditional" and "dummy node".
+在我看来，有两种值得注意的实现方法。"传统的" 和 "假节点" (dummy node)。
 
-The traditional approach is the simple extension of how we did a Stack &mdash; just store the head and tail pointers on the stack:
+传统的方法是我们实现 Stack 的方法的简单扩展 &mdash; 只需在栈上存储头部和尾部的指针。
 
 ```text
 [ptr, ptr] <-> (ptr, A, ptr) <-> (ptr, B, ptr)
@@ -30,9 +30,9 @@ The traditional approach is the simple extension of how we did a Stack &mdash; j
   +----------------------------------------+
 ```
 
-This is fine, but it has one downside: corner cases. There are now two edges to our list, which means twice as many corner cases. It's easy to forget one and have a serious bug.
+这种方式很好，但它有一个缺点：极端情况(corner cases)。现在我们的链表上有两条边，这意味着两倍的极端情况。很容易忘记，从而产生一个严重的错误。
 
-The dummy node approach attempts to smooth out these corner cases by adding an extra node to our list which contains no data but links the two ends together into a ring:
+假节点的方法是在我们的链表中添加一个额外的节点，这个节点不包含任何数据，但将链表两端连接成一个环，以此试图统一处理这些极端情况。
 
 ```text
 [ptr] -> (ptr, ?DUMMY?, ptr) <-> (ptr, A, ptr) <-> (ptr, B, ptr)
@@ -40,7 +40,7 @@ The dummy node approach attempts to smooth out these corner cases by adding an e
            +-------------------------------------------------+ 
 ```
 
-By doing this, every node *always* has actual pointers to a previous and next node in the list. Even when you remove the last element from the list, you just end up stitching the dummy node to point at itself:
+这样做，每个节点 *总是* 有指针指向链表中的上一个和下一个节点。即使你从链表中删除了最后一个元素，你也只是把假的节点缝合起来指向自己。
 
 ```text
 [ptr] -> (ptr, ?DUMMY?, ptr) 
@@ -48,25 +48,25 @@ By doing this, every node *always* has actual pointers to a previous and next no
            +-------------+
 ```
 
-There is a part of me that finds this *very* satisfying and elegant. Unfortunately, it has a couple practical problems:
+我一定程度上认为这*非常*令人满意和优雅。不幸的是，它有几个实际问题:
 
-Problem 1: An extra indirection and allocation, especially for the empty list, which must include the dummy node. Potential solutions include:
+问题1：一个额外的指令和分配，特别是对于空链表，它必须包括假节点。可能的解决方案包括:
 
-* Don't allocate the dummy node until something is inserted: simple and effective, but it adds back some of the corner cases we were trying to avoid by using dummy pointers!
+* 在有东西插入之前不要分配假节点：简单而有效，但它又增加了一些极端情况, 这本来是我们试图通过使用假指针来避免的!
 
-* Use a static copy-on-write empty singleton dummy node, with some really clever scheme that lets the Copy-On-Write checks piggy-back on normal checks: look I'm really tempted, I really do love that shit, but we can't go down that dark path in this book. Read [ThinVec's sourcecode](https://docs.rs/thin-vec/0.2.4/src/thin_vec/lib.rs.html#319-325) if you want to see that kind of perverted stuff.
+* 使用一个静态的 copy-on-write 的空的单个假节点，用一些非常聪明的方法让 copy-on-write 的检查捎带上正常的检查：看，我真的很想，我真的很喜欢那玩意，但我们不能在这本书里走那条黑暗的路。如果你想看那种变态的东西，请阅读[ThinVec's sourcecode](https://docs.rs/thin-vec/0.2.4/src/thin_vec/lib.rs.html#319-325)的源代码。
 
-* Store the dummy node on the stack - not practical in a language without C++-style move-constructors. I'm sure there's something weird thing we could do here with [pinning](https://doc.rust-lang.org/std/pin/index.html) but we're not gonna.
+* 将假节点存储在栈中 - 在没有 C++ 风格的移动结构的语言中不实用。我相信在这里我们可以用[pinning](https://doc.rust-lang.org/std/pin/index.html)做一些奇怪的事情，但我们不会这样做的。
 
-Problem 2: What *value* is stored in the dummy node? Sure if it's an integer it's fine, but what if we're storing a list full of `Box`? It may be impossible for us to initialized this value! Potential solutions include:
+问题2：假节点中存储的是什么 *值*？当然，如果是一个整数就没问题，但如果我们存储的是一个充满 `Box` 的链表呢？我们可能不能初始化这个值! 潜在的解决方案包括:
 
-* Make every node store `Option<T>`: simple and effective, but also bloated and annoying.
+* 让每个节点都存储`Option<T>`：简单有效，但也很臃肿和烦人。
 
-* Make every node store [`MaybeUninit<T>`](https://doc.rust-lang.org/std/mem/union.MaybeUninit.html). Horrifying and annoying.
+* 让每个节点都存储 [`MaybeUninit<T>`](https://doc.rust-lang.org/std/mem/union.MaybeUninit.html)。骇人听闻，令人厌烦。
 
-* *Really* careful and clever inheritance-style type punning so the dummy node doesn't include the data field. This is also tempting but it's extremely dangerous and annoying. Read [BTreeMap's source](https://doc.rust-lang.org/1.55.0/src/alloc/collections/btree/node.rs.html#49-104) if you want to see that kind of perverted stuff.
+* 使用*非常*小心、聪明的继承式类型双关，这样假的节点就不包括数据字段。这也是很诱人的，但它是极其危险和恼人的。如果你想看那种变态的东西，请阅读 [BTreeMap's source](https://doc.rust-lang.org/1.55.0/src/alloc/collections/btree/node.rs.html#49-104)的源代码。
 
-The problems really outweigh the convenience for a language like Rust, so we're going to stick to the traditional layout. We'll be using the same basic design as we did for the unsafe queue in the previous chapter:
+对于像 Rust 这样的语言来说，这些方法带来的问题比简化的东西更多，所以我们要坚持使用传统的布局。我们将使用与上一章中的不安全队列相同的基本设计。
 
 ```rust
 pub struct LinkedList<T> {
@@ -84,6 +84,6 @@ struct Node<T> {
 }
 ```
 
-(Now that we have reached the doubly-linked-deque, we have finally earned the right to call ourselves LinkedList, for this is the True Linked List.)
+(现在，我们到了双向链表队列这一步，我们终于赢得了称自己为 LinkedList 的权利，因为这才是真正的 Linked List）。
 
-This isn't quite a *true* production-quality layout yet. It's *fine* but there's magic tricks we can do to tell Rust what we're doing a bit better. To do that we're going to need to go... deeper.
+这还不是一个*真正的*产品级的布局。这很*不错*，但是我们可以用一些魔术来更好地告诉 Rust 我们正在做的事情。要做到这一点，我们需要......更深入。

@@ -1,8 +1,8 @@
-# Filling In Random Bits
+# 填入其它功能
 
-Hey you said you wanted to be production-quality, didn't you? 
+嘿，你说你想成为生产质量，不是吗？
 
-Here's some more random gunk to toss in to be a "good" collection:
+为了成为一个 "好" 的数据结构，这里还有一些随机的垃圾要扔进去:
 
 ```rust ,ignore
 impl<T> LinkedList<T> {
@@ -17,7 +17,7 @@ impl<T> LinkedList<T> {
 }
 ```
 
-And now we've got a bunch of traits to implement that everyone expects:
+而现在我们已经有了一堆大家期待的 traits 要实现:
 
 ```rust ,ignore
 impl<T> Default for LinkedList<T> {
@@ -92,15 +92,15 @@ impl<T: Hash> Hash for LinkedList<T> {
 }
 ```
 
-I definitely wrote all of these from scratch, and didn't just copy the std impls. Because they're so interesting, and I definitely remember the subtleties of manually implementing Hash. Yeah, that's something I think about All The Time...
+这些都是我从头开始写的，而不是简单地复制 std impls 。因为它们太有趣了，而且我绝对记得手动实现哈希的微妙之处。是的，这是我一直在考虑的事情......
 
-Ok there's actually a few things worth noting here.
+好吧，这里其实有几件事值得注意。
 
-First, a nasty namespace clash. For whatever reason std now has macros named Hash and Debug, and so if you don't have the traits imported, you'll get really cryptic errors about macros instead of the proper "missing trait".
+首先，一个讨厌的名字空间冲突。不管出于什么原因，std 现在有名为 Hash 和 Debug 的宏，所以如果你没有导入 traits, 你会得到关于宏的隐晦错误，而不是正确的 "缺少 trait"。
 
-The other intersting thing to talk about is Hash itself. Do you see how we hash in `len`? That's actually really important! If collections don't hash in lengths, [they can accidentally make themselves vulnerable to prefix collisions](https://doc.rust-lang.org/std/hash/trait.Hash.html#prefix-collisions). For instance, what distinguishes `["he", "llo"]` from `["hello"]`? If no one is hashing lengths or some other "separator", nothing! Making it too easy for hash collisions to accidentally or maliciously happen can result in serious sadness, so just do it!
+另一件有趣的事情是Hash本身。你看到我们是如何在`len`中哈希的吗？这实际上是非常重要的!  如果集合不以长度散列, [它们会意外地使自己受到前缀碰撞的影响](https://doc.rust-lang.org/std/hash/trait.Hash.html#prefix-collisions). 例如, 如何区分 `["he", "llo"]` 和 `["hello"]`? 如果没有对长度或其他一些 "分隔符" 进行哈希，那就什么都没有! 使得哈希碰撞太容易意外地或恶意地发生, 会导致严重的悲哀，所以只要做到这一点就可以了!
 
-Alright, here's our current code:
+好了，这是我们目前的代码:
 
 ```rust
 use std::cmp::Ordering;

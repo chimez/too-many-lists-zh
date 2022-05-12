@@ -1,20 +1,20 @@
-# Implementing Cursors
+# 实现光标 
 
-Ok so we're only going to bother with std's CursorMut because the immutable version isn't actually interesting. Just like my original design, it has a "ghost" element that contains None to indicate the start/end of the list, and you can "walk over it" to wrap around to the other side of the list. To implement it, we're going to need:
+好的，所以我们只打算用std的CursorMut来处理，因为不可变的版本实际上并不有趣。就像我最初的设计一样，它有一个包含None的 "幽灵" 元素来表示列表的开始/结束，你可以 "走过它" 来环绕到列表的另一边。为了实现它，我们将需要:
 
-* A pointer to the current node
-* A pointer to the list
-* The current index
+* 一个指向当前节点的指针
+* 一个指向列表的指针
+* 当前的索引
 
-Wait what's the index when we point at the "ghost"? 
+等等，当我们指向 "幽灵" 的时候，索引是什么？
 
-*furrows brow* ... *checks std* ... *dislikes std's answer*
+*眉头紧皱* ... *检查std* ... *不喜欢std的答案*
 
-Ok so quite reasonably `index` on a Cursor returns an `Option<usize>`. The std implementation does a bunch of junk to avoid storing it as an Option but... we're a linked list, it's fine. Also std has the cursor_front/cursor_back stuff which starts the cursor on the front/back elements, which feels intuitive, but then has to do something weird when the list is empty.
+好吧，很合理地，游标上的`index`返回一个`Option<usize>`。std的实现做了一堆垃圾来避免将其存储为一个Option，但是......我们是一个链表，这很好。std 也有  cursor_front/cursor_back 的东西，它在前面/后面的元素上启动光标，这感觉很直观，但是当列表为空时，必须做一些奇怪的事情。
 
-You can implement that stuff if you want, but I'm going to cut down on all the repetitive gunk and corner cases and just make a bare `cursor_mut` method that starts at the ghost, and people can use move_next/move_prev to get the one they want (and then you can wrap that up as cursor_front if you really want).
+如果你想的话，你可以实现这些东西，但是我打算减少所有重复的垃圾和极端的情况，只做一个光秃秃的`cursor_mut`方法，从幽灵开始，人们可以使用 move_next/move_prev 来获得他们想要的（如果你真的想的话，你可以把它包起来作为cursor_front）。
 
-Let's get cracking:
+让我们开始行动吧:
 
 ```rust ,ignore
 pub struct CursorMut<'a, T> {
@@ -24,7 +24,7 @@ pub struct CursorMut<'a, T> {
 }
 ```
 
-Pretty straight-forward, one field for each item of our bulleted list! Now the `cursor_mut` method:
+很直接，我们的列表中的每一个项目都有一个字段。现在是`cursor_mut`方法:
 
 ```rust ,ignore
 impl<T> LinkedList<T> {
@@ -38,8 +38,7 @@ impl<T> LinkedList<T> {
 }
 ```
 
-Since we're starting at the ghost, we can just start with everything as None, nice and simple! Next, movement:
-
+既然我们从幽灵开始，我们就可以从一切都 None 开始，很好，很简单! 接下来是移动：
 
 ```rust ,ignore
 impl<'a, T> CursorMut<'a, T> {
@@ -70,14 +69,14 @@ impl<'a, T> CursorMut<'a, T> {
 }
 ```
 
-So there's 4 interesting cases:
+所以有4种有趣的情况。
 
-* The normal case
-* The normal case, but we reach the ghost
-* The ghost case, where we go to the front of the list
-* The ghost case, but the list is empty, so do nothing
+* 正常的情况
+* 正常的情况，但我们到达了幽灵的位置
+* 幽灵的情况，我们走到了列表的前面
+* 幽灵的情况，但是列表是空的，所以什么都不做
 
-move_prev is the exact same logic, but with front/back inverted and the indexing changes inverted:
+move_prev 是完全相同的逻辑，但是前后颠倒了，索引变化也颠倒了:
 
 ```rust ,ignore
 pub fn move_prev(&mut self) {
@@ -102,9 +101,9 @@ pub fn move_prev(&mut self) {
 }
 ```
 
-Next let's add some methods to look at the elements around the cursor: current, peek_next, and peek_prev. **A Very Important Note:** these methods must borrow our cursor by `&mut self`, and the results must be tied to that borrow. We cannot let the user get multiple copies of a mutable reference, and we cannot let them use any of our insert/remove/split/splice APIs while holding onto such a reference!
+接下来让我们添加一些方法来查看光标周围的元素：current, peek_next, 和 peek_prev。**非常重要的标注：**这些方法必须通过`&mut self` 来借用我们的光标，而且结果必须与该借用相联系。我们不能让用户得到一个可变引用的多个副本，也不能让他们在抓着这样的引用时使用我们的任何插入/删除/拆分/分片的API!
 
-Thankfully, this is the default assumption rust makes when you use lifetime elision, so, we will just do the right thing by default!
+值得庆幸的是，当你使用生命周期消除时，这是Rust的默认假设，所以，我们将默认做正确的事情!
 
 ```rust ,ignore
 pub fn current(&mut self) -> Option<&mut T> {
@@ -130,35 +129,33 @@ pub fn peek_prev(&mut self) -> Option<&mut T> {
 }
 ```
 
-Head empty, Option methods and (omitted) compiler errors do all thinking now. I was skeptical about the `Option<NonNull>` stuff, but, god damn it really just lets me autopilot this code. I've spent way too much time writing array-based collections where you never get to use Option, wow this is nice! (`(*node.as_ptr())` is still miserable but, that's just Rust's raw pointers for you...)
+头部为空，Option 方法和（省略的）编译器错误现在都在思考。我对`Option<NonNull>`的东西持怀疑态度，但是，该死的它真的让我自动驾驶这段代码。 我花了太多的时间来写基于数组的数据结构，在那里你从来没有使用过Option，哇，这真好！"。(`(*node.as_ptr())`还是很惨的，但是，这只是Rust的原始指针...)
 
-Next we have a choice: we can either jump right to split and splice, the entire point of these APIs, or we can take a baby-step with single element insert/remove. I have a feeling we're just going to want to implement insert/remove in terms of split and splice so... let's just do those first and see where the cards fall (genuinely have no idea as I type this).
-
-
+接下来我们有一个选择：我们可以直接跳到分割和拼接，这就是这些API的全部意义，或者我们可以在单元素插入/移除方面采取一个小步骤。我有一种感觉，我们只是想在分割和拼接方面实现插入/删除，所以......让我们先做这些，看看结果如何（当我写到这里的时候，我真的不知道）。
 
 
-# Split
+# 拆分
 
-First up, split_before and split_after, which return everything before/after the current element as a LinkedList (stopping at the ghost element, unless you're at the ghost, in which case we just return the whole List and the cursor now points to an empty list):
+首先是 split_before 和 split_after, 它们将当前元素之前/之后的所有内容作为 LinkedList 返回（在幽灵元素处停止，除非你在幽灵处，在这种情况下，我们只是返回整个List，并且光标现在指向一个空列表）。
 
-*squints* ok this one is actually some non-trivial logic so we're going to have to talk it out one step at a time.
+*斜眼看* 好的，这个实际上是一些不简单的逻辑，所以我们必须一步一步地谈出来。
 
-I see 4 potentially interesting cases for split_before:
+我看到split_before有4种潜在的有趣情况。
 
-* The normal case
-* The normal case, but prev is the ghost
-* The ghost case, where we return the whole list and become empty
-* The ghost case, but the list is empty, so do nothing and return the empty list
+* 正常情况
+* 正常情况，但prev是幽灵
+* 幽灵情况，我们返回整个列表，成为空的。
+* 幽灵情况，但是列表是空的，所以什么都不做，返回空列表
 
-Let's start with the corner cases. The third case I believe is just
+让我们从极端情况开始。第三种情况我认为就是
 
 ```rust
 mem::replace(self.list, LinkedList::new())
 ```
 
-Right? We become empty, we return the whole list, and our fields were already None, so nothing to update. Nice. Oh hey, this also Does The Right Thing on the fourth case too!
+对吗？我们变成了空的，我们返回整个列表，而且我们的字段已经是 None，所以没有什么可更新的。很好。哦，嘿嘿，这也是在第四种情况下做的正确的事情!
 
-So now the normal cases... ok I'm going to need some ASCII diagrams for this. In the most general case, we have something like this:
+现在是正常情况......好吧，我需要一些ASCII图来说明。在最一般的情况下，我们有这样的东西:
 
 ```text
 list.front -> A <-> B <-> C <-> D <- list.back
@@ -166,7 +163,7 @@ list.front -> A <-> B <-> C <-> D <- list.back
                          cur
 ```
 
-And we want to produce this:
+而我们想要产生这个:
 
 ```text
 list.front -> C <-> D <- list.back
@@ -176,7 +173,8 @@ list.front -> C <-> D <- list.back
 return.front -> A <-> B <- return.back
 ```
 
-So we need to break the link between cur and prev, and... god so much needs to change. Ok I just need to break this up into steps so I can convince myself it makes sense. This will be a bit over-verbose but I can at least make sense of it:
+
+所以我们需要打破cur和prev之间的联系，而且......上帝啊，需要改变的东西太多了。好吧，我只需要把这分成几个步骤，这样我就能说服自己这是有意义的。这将是一个有点过于冗长，但我至少可以让它有意义:
 
 ```rust ,ignore
 pub fn split_before(&mut self) -> LinkedList<T> {
@@ -226,7 +224,7 @@ pub fn split_before(&mut self) -> LinkedList<T> {
 }
 ```
 
-Note that this if-let is handling the "normal case, but prev is the ghost" situation:
+注意：这些 if-let 处理“正常情况，但是 prev 是幽灵” 的情况:
 
 ```rust ,ignore
 if let Some(prev) = prev {
@@ -235,33 +233,31 @@ if let Some(prev) = prev {
 }
 ```
 
-If *you* want to, you can squash that all together and apply optimizations like:
+如果*你*想，你可以把这一切都压缩住，然后做优化，比如:
 
-* fold the two accesses to `(*cur.as_ptr()).front` as just `(*cur.as_ptr()).front.take()` 
-* note that new_back is a noop, and just remove both
+* 把两次访问 `(*cur.as_ptr()).front` 写成 `(*cur.as_ptr()).front.take()` 
+* 注意，new_back 是一个 noop ，并删除这两个
 
-As far as I can tell, everything else just incidentally Does The Right Thing otherwise. We'll see when we write tests! (copy-paste to make split_after)
+就我所知，其他的都是顺便做了正确的事情。当我们写测试时，我们会看到! (复制粘贴实现 split_after)
 
-I am done Making Mistakes and I am just going to try to write the most foolproof code I can. This is how I *actually* write collections: just break things down into trivial steps and cases until it can fit in my head and seems foolproof. Then write a ton of tests until I'm convinced I didn't manage to mess it up still.
+我已经不再犯错了，我只想尽力写出最完美的代码。这就是我*实际*写数据结构的方法：只是把事情分解成琐碎的步骤和案例，直到它能在我的脑海中出现，并且看起来万无一失。然后写一大堆的测试，直到我确信我没有把它搞乱。
 
-Because most of the collections work I've done is *extremely unsafe* I don't generally get to rely on the compiler catching mistakes, and miri didn't exist back in the day! So I just need to squint at a problem until my head hurts and try my hardest to Never Ever Ever Make A Mistake.
+因为我所做的大多数数据结构工作都是*极端不安全的*，我一般不会依靠编译器来捕捉错误，而 Miri 在当时并不存在！所以我只需要眯着眼睛看，直到我头疼，并尽力做到永远不犯错。
 
-Don't write Unsafe Rust Code! Safe Rust is so much better!!!!
-
-
+不要写不安全的Rust代码! 安全的Rust是如此的好!!!!
 
 
-# Splice
+# 拼接
 
-Just one more boss to fight, splice_before and splice_after, which I expect to be the corner-casiest one of them all. The two functions *take in* a LinkedList and grafts its contents into outrs. Our list could be empty, their list could be empty, we've got ghosts to deal with... *sigh* let's just take it one step at a time with splice_before.
+只剩下一个boss要打，就是 splice_before 和 splice_after，我预期这是最棘手的。这两个函数 *接收* 一个 LinkedList, 并将其内容移植到 outrs 中。我们的列表可能是空的，他们的列表可能是空的，我们有鬼魂要处理......。*叹气* 让我们用 splice_before 一步步来吧.
 
-* If their list is empty, we don't need to do anything. 
-* If our list is empty, then our list just becomes their list.
-* If we're pointing at the ghost, then this appends to the back (change list.back)
-* If we're pointing at the first element (0), this this appends to the front (change list.front)
-* In the general case, we do a whole lot of pointer fuckery.
+* 如果他们的列表是空的，我们就不需要做任何事情。
+* 如果我们的列表是空的，那么我们的列表就成为他们的列表。
+* 如果我们指向鬼魂，那么这就会追加到后面（改变list.back）。
+* 如果我们指向第一个元素(0)，这个就追加到前面(change list.front)
+* 在正常情况下，我们做一大堆的指针操作。
 
-The general case is this:
+一般情况下是这样的:
 
 ```text
 input.front -> 1 <-> 2 <- input.back
@@ -271,13 +267,13 @@ input.front -> 1 <-> 2 <- input.back
                     cur
 ```
 
-Becoming this:
+成为这样:
 
 ```text
 list.front -> A <-> 1 <-> 2 <-> B <-> C <- list.back
 ```
 
-Ok? Ok. Let's write that out... *TAKES A HUGE BREATH AND PLUNGES IN*:
+好吗？好的。让我们把它写出来... *大口大口地呼吸，然后投身其中*:
 
 ```rust ,ignore
     pub fn splice_before(&mut self, mut input: LinkedList<T>) {
@@ -330,25 +326,25 @@ Ok? Ok. Let's write that out... *TAKES A HUGE BREATH AND PLUNGES IN*:
     }
 ```
 
-Ok this one is genuinely horrendous, and really is feeling that `Option<NonNull>` pain now. But there's a lot of cleanups we can do. For one, we can pull this code out to the very end, because we always want to do it. I don't *love*  (although sometimes it's a noop, and setting `input.len` is more a matter of paranoia about future extensions to the code):
+好吧，这个确实很可怕，现在真的感觉到了`Option<NonNull>`的痛苦。但是我们可以做很多清理工作。首先，我们可以把这段代码拉到最后，因为我们一直想这么做。我不*爱*（虽然有时是个noop，而设置`input.len`更多的是对未来代码扩展的偏执）。
 
 ```rust ,ignore
 self.list.len += input.len;
 input.len = 0;
 ```
 
-> Use of moved value: `input`
+> 移动值的使用：`input`。
 
-Ah, right, in the "we're empty" case we're moving the list. Let's replace that with a swap:
+啊，对了，在 "我们是空的" 情况下，我们正在移动列表。让我们用交换来代替它:
 
 ```rust ,ignore
 // We're empty, become the input, remain on the ghost
 std::mem::swap(self.list, &mut input);
 ```
 
-In this case the writes will be pointless, but, they still work (we could probably also early-return in this branch to appease the compiler).
+在这种情况下，写法将是无指针的，但是，它们仍然可以工作（我们可能也可以在这个分支中提前返回以安抚编译器）。
 
-This unwrap is just a consequence of me thinking about the cases backwards, and can be fixed by making the if-let ask the right question:
+这种 unwrap 只是我对案例进行反向思考的结果，可以通过让 if-let 提出正确的问题来解决:
 
 ```rust ,ignore
 if let Some(0) = self.index {
@@ -358,13 +354,13 @@ if let Some(0) = self.index {
 }
 ```
 
-Adjusting the index is duplicated inside the branches, so can also be hoisted out:
+调整索引是在分支内部重复进行的，所以也可以取出来:
 
 ```rust
 *self.index.as_mut().unwrap() += input.len;
 ```
 
-Ok, putting that all together we get this:
+好吧，把这一切放在一起，我们得到这个:
 
 ```rust
 if input.is_empty() {
@@ -409,14 +405,14 @@ input.len = 0;
 // Input dropped here
 ```
 
-Alright this still sucks, but mostly because of -- nope ok just spotted a bug:
+好吧，这仍然很糟糕，但主要是因为 -- 不，好吧，只是发现了一个 bug:
 
 ```rust
     (*back.as_ptr()).back = input.front.take();
     (*input.front.unwrap().as_ptr()).front = Some(back);
 ```
 
-We `take` input.front and then unwrap it on the next line! *sigh* and we do the same thing in the equivalent mirror case. We would have caught this instantly in tests, but, we're trying to be Perfect now, and I'm just kinda doing this live, and this is the exact moment where I saw it. This is what I get for not being my usual tedious self and doing things in phases. More explicit!
+我们 `take` input.front，然后在下一行把它 unwrap! *叹气*，我们在同样的镜像情况下做同样的事情。 我们本来可以在测试中立即发现这个问题， 但是， 我们现在正在努力做到完美， 而我只是在现场就做这个，这正是我看到它的时刻。这就是我没有像往常一样乏味，分阶段做事情的结果。更加明确!
 
 ```rust
 // We can either `take` the input's pointers or `mem::forget`
@@ -463,12 +459,11 @@ input.len = 0;
 // Input dropped here
 ```
 
-Alright now this, this I can tolerate. The only complaints I have are that we don't dedupe in_front/in_back (probably we could rejig our conditions but eh whatever). Really this is basically what you would write in C but with `Option<NonNull>` gunk making it tedious. I can live with that. Well no we should just make raw pointers better for this stuff. But, out of scope for this book.
+好了，现在这个，这个我可以容忍。我唯一的抱怨是，我们没有 in_front/in_back 进行重复计算（也许我们可以重新调整我们的条件，但不管怎样）。真的，这基本上就是你在C语言中写的东西，但是`Option<NonNull>`的垃圾让它变得很乏味。我可以接受这一点。好吧，我们应该让原始指针更好地用于这些东西。但是，超出了本书的范围。
 
-Anyway, I am absolutely exhausted after that, so, `insert` and `remove` and all the other APIs can be left as an excercise to the reader. 
+总之，我已经精疲力尽了，所以，`insert` 和 `remove` 以及所有其他的API可以留给读者作为练习。
 
-Here's the final code for our Cursor with my attempt at copy-pasting the combinatorics. Did I get it right? I'll only find out when I write the next chapter and test this monstrosity!
-
+这是我们光标的最终代码，我试图复制粘贴组合代码。我做得对吗？只有当我写下一章并测试这个怪胎时才会知道!
 
 ```rust ,ignore
 pub struct CursorMut<'a, T> {

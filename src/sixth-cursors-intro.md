@@ -1,23 +1,23 @@
-# An Introduction To Cursors
+# 光标 (Cursors) 简介
 
-OK!!! We now have a LinkedList that's on par with std's 1.0 implementation! Which of course means that our LinkedList is *still completely useless*. We've taken the enormous performance penalty of implementing a Deque as a linked list, **and we don't have any of the APIs that make it actually useful**. 
+好了！！！我们现在有了一个与std的1.0实现相当的LinkedList!  当然，这意味着我们的 LinkedList *仍然是完全无用的*。我们把 Deque 作为一个链表来实现， 在性能上造成了巨大的损失， **而且我们没有任何API来使其真正有用**。
 
-Here's how we do against the "killer apps" of linked lists:
+下面是我们如何对付链表的 "杀手级应用" 的情况:
 
-* 🚫 Getting to do [weird intrusive stuff](https://docs.rs/linked-hash-map/latest/linked_hash_map/)
-* 🚫 Getting to do [weird lockfree stuff](https://doc.rust-lang.org/std/sync/mpsc/)
-* 🚫 Getting to store [Dynamically Sized Types](https://doc.rust-lang.org/nomicon/exotic-sizes.html#dynamically-sized-types-dsts)
-* 🌟 O(1) push/pop without [amortization](https://en.wikipedia.org/wiki/Amortized_analysis) (if you are willing to believe that malloc is O(1))
-* 🚫 O(1) list splitting
-* 🚫 O(1) list splicing
+* 🚫 做一些 [奇怪的侵入性的事情](https://docs.rs/linked-hash-map/latest/linked_hash_map/)
+* 🚫 做一些 [奇怪的无锁的事情](https://doc.rust-lang.org/std/sync/mpsc/)
+* 🚫 存储一些 [动态大小类型](https://doc.rust-lang.org/nomicon/exotic-sizes.html#dynamically-sized-types-dsts)
+* 🌟 O(1) push/pop 没有 [摊销](https://en.wikipedia.org/wiki/Amortized_analysis) (如果你愿意相信 malloc 是 O(1))
+* 🚫 O(1) 列表拆分
+* 🚫 O(1) 列表拼接
 
-Well... 1 out of 6 is... better than nothing! Do you see why I wanted to rip this thing out of std?
+啊…… 六个中的一个只是…… 聊胜于无！ 你看到我为什么想把这个东西从标准库里去掉了吗？
 
-We're not going to make our list support "weird" stuff, because that's all adhoc and domain-specific. But the splitting and splicing thing, now that's something we can do!
+我们不打算让我们的列表支持 "奇怪" 的东西，因为那都是临时的和特定领域的。但是，分割和拼接的事情，现在是我们可以做的了！。
 
-But here's the problem: actually *reaching* the k<sup>th</sup> element in a LinkedList takes O(k) time, so how can we *possibly* do arbitrary splits and merges in O(1)? Well, the trick is that you don't have an API like `split_at(index)` -- you make a system where the user can statefully iterate to a position in the list and make O(1) modifications at that point!
+但是问题来了：实际上*到达*LinkedList中的第k个元素需要O(k)的时间，所以我们怎么*可能*在O(1)中进行任意的拆分和合并？ 诀窍在于，你没有像 "split_at(index)" 那样的API -- 你建立了一个系统，用户可以有状态地迭代到列表中的某个位置，并在该点进行O(1)的修改！
 
-Hey, we already have iterators! Can we use them for this? Kind of... but one of their super-powers gets in the way. You may recall that the way that we write out the lifetimes for by-ref iterators means that the references they return *aren't* tied to the iterator. This lets us repeatedly call `next` and hold onto the elements:
+嘿，我们已经有了迭代器!  我们可以用它们来做这个吗？类似吧......但是它们的一个超级能力妨碍了我们。 你可能还记得，我们为 by-ref 迭代器写出生命周期的方式意味着它们返回的引用 *不* 与迭代器相联系。这让我们可以重复调用 `next` 并保持元素的存在:
 
 ```rust ,ignore
 let mut list = ...;
@@ -28,96 +28,96 @@ let elem2 = list.next();
 if elem1 == elem2 { ... }
 ```
 
-If the returned references borrowed the iterator, then this code wouldn't work at all. The compiler would just complain about the second call to `next`! This flexibility is great, but it puts some implicit constraints on us:
+如果返回的引用借用了迭代器，那么这段代码就根本无法工作。编译器会抱怨对`next`的第二次调用! 这种灵活性很好，但它给我们带来了一些隐含的限制:
 
-* By-Mutable-Ref Iterators can never go backwards and yield an element again, because the user would be able to get two `&mut`'s to the same element, breaking fundamental rules of the language.
+* By-Mutable-Ref 迭代器不能往回走，不能再次产生同一个元素，因为用户可以对同一个元素进行两次`&mut`，从而破坏了语言的基本规则。
 
-* By-Ref Iterators can't have extra methods which could possibly modify the underlying collection in a way that would invalidate any reference that has already been yielded.
+* By-Ref 迭代器不能有额外的方法，这些方法可能会修改底层集合，从而使任何已经产生的引用无效。
 
-Unfortunately, both of these things are *exactly* what we want our LinkedList API to do! So we can't just use iterators, we need something new: *Cursors*.
+不幸的是，这两件事*正是*我们希望我们的LinkedList API所要做的。所以我们不能仅仅使用迭代器，我们需要新的东西。*光标* (cursors)。
 
-Cursors are exactly like the little blinking `|` you get when you're editing some text on a computer. It's a position in a sequence (the text) that you can move around (with the arrow keys), and whenever you type the edits happen at that point.
+光标就像你在电脑上编辑文本时得到的闪烁的小`|`。 它是一个序列（文本）中的一个位置，你可以在这个位置上移动（用方向键），每当你打字的时候，编辑就发生在这个点上。
 
-See if I just
+看，如果我只是
 
-press
+按
 
-enter
+回车
 
-the whole
+整个
 
-text
+文本
 
-gets broken in half.
+就会被打成两半。
 
-Sorry you're standing behind me and watching me type this right? So that totally makes sense, right? Right.
+对不起，你正站在我身后看着我打这个字，对吗？所以这完全说得通，对吗？是的。
 
-Now if you've ever had the misfortune of having a keyboard with an "insert" key and actually pressed it, you know that there's actually technically two interpretations of cursors: they can either lie between elements (characters) or *on* elements. I'm pretty sure no one has ever pressed "insert" on purpose in their life, and that it exists purely as a Suffering Button, so it's pretty obvious which one is Better and Right: cursors go between elements!
+现在，如果你曾经不幸拥有一个带有 "插入" 键的键盘，并且真的按了它，你就会知道，从技术上讲，对光标有两种解释： 它们可以位于元素（字符）之间，也可以位于 元素 *上* 。 我敢肯定，没有人在他们的生活中故意按过 "插入" 键，它纯粹是作为一个痛苦的按钮而存在的，所以很明显哪一个是更好的和正确的：光标位于元素之间！这是个很好的逻辑。
 
-Pretty rock-solid logic right there, I don't think anyone can disagree with me.
+坚如磐石的逻辑就在这里，我想没有人能够反对我的观点。
 
-Sorry what? There was an [RFC in 2018 to add Cursors to Rust's LinkedList](https://github.com/rust-lang/rfcs/blob/master/text/2570-linked-list-cursors.md)?
+对不起, 什么？有一个[2018年的RFC，为Rust的LinkedList添加光标](https://github.com/rust-lang/rfcs/blob/master/text/2570-linked-list-cursors.md)？
 
-> With a Cursor one can seek back and forth through a list and get the current element. With a CursorMut One can seek back and forth and get mutable references to elements, and it can insert and delete elements before and behind the current element (along with performing several list operations such as splitting and splicing).
+> 通过游标，人们可以在一个列表中来回寻找并获得当前元素。使用CursorMut，人们可以来回寻找并获得对元素的可变引用，它可以在当前元素之前和之后插入和删除元素（同时执行一些列表操作，如分割和拆分）。
 
-*Current element*? This cursor is *on* elements, not between them! I can't believe they didn't accept my totally rock-solid argument! So yeah you can just go use the Cursor in std... wait, it's [2022, and Rust 1.60 still has Cursor marked as unstable](https://doc.rust-lang.org/1.60.0/std/collections/linked_list/struct.CursorMut.html)?
+*当前元素*？这个游标是在元素*上*的，而不是在元素之间的! 我不相信他们不接受我那完全坚如磐石的论点！ 我不相信他们不接受。所以是的，你可以直接去使用std中的Cursor......等等，现在是 [2022年，而Rust 1.60仍然将Cursor标记为不稳定](https://doc.rust-lang.org/1.60.0/std/collections/linked_list/struct.CursorMut.html)?
 
-Hey wait:
+嘿，等等:
 
-> Cursors always rest between two elements in the list, and index in a logically circular way. To accommodate this, there is a "ghost" non-element that yields None between the head and tail of the list.
+> 游标总是停留在列表的两个元素之间，并以逻辑上的循环方式进行索引。为了适应这一点，在列表的头部和尾部之间有一个 "幽灵" 非元素，产生 None。
 
-HEY WAIT. This is the opposite of what the RFC says??? But wait all the docs on the methods still refer to "current" elements... wait hold on, where have I seen this ghost stuff before. Oh wait, didn't I do that in [my old linked-list fork](https://docs.rs/linked-list/0.0.3/linked_list/struct.Cursor.html) where I prototyped?
+嘿，等等。这与 RFC 所说的正好相反??? 但是等一下，所有关于这些方法的文档仍然提到 "当前" 元素......等一下，我在哪里看到过这个鬼东西。哦，等等，我不是在[我的老linked-list fork](https://docs.rs/linked-list/0.0.3/linked_list/struct.Cursor.html)中做过吗，在那里我做了原型？
 
-> Cursors always rest between two elements in the list, and index in a logically circular way. To accomadate this, there is a "ghost" non-element that yields None between the head and tail of the List.
+> 游标总是停留在列表的两个元素之间，并以逻辑上的循环方式进行索引。为了适应这种情况，在列表的头部和尾部之间有一个 "幽灵 "非元素，产生 None。
 
-Hold up what the fuck. This isn't a gag, I am actually trying to Read The Docs right now. Did std actually RFC a different design from the one I proposed in 2015, but then copy-paste the docs from my prototype??? Is std meta-shitposting me for writing a book about how much I hate LinkedList????? Like yeah I built that prototype to demonstrate the concept so that people would let me add it to std and make LinkedList not useless but, qu'est-ce que le fuck??????????????
+等一下，这他妈的是什么？这不是插科打诨，我现在确实在努力阅读文档。难道std实际上RFC的设计与我在2015年提出的设计不同，但又从我的原型中复制粘贴了文档？ std 是否因为我写了一本关于我有多讨厌 LinkedList 的书而对我进行了meta-shit posted????? 好像是的，我建立了那个原型来证明这个概念，这样人们就会让我把它添加到std中，让LinkedList不至于一无是处，但是，这就是他妈的??????????????。
 
-Ok you know what, clearly std is blessing my design as the objectively superior one, so we're going to do my design. Also that's nice because this entire chapter is me actually literally rewriting that library from scratch, so not changing the API sounds Good To Me!
+好吧，你知道吗，很明显，std 认为我的设计是客观上优越的，所以我们要做我的设计。这也很好，因为这一章实际上是我从头开始重写了那个库，所以不改变API对我来说听起来很好！
 
-Here's the full top-level docs I wrote:
+下面是我写的完整的顶层文档:
 
-> A Cursor is like an iterator, except that it can freely seek back-and-forth, and can safely mutate the list during iteration. This is because the lifetime of its yielded references are tied to its own lifetime, instead of just the underlying list. This means cursors cannot yield multiple elements at once.
+> 光标就像一个迭代器，只是它可以自由地来回寻找，并且可以在迭代过程中安全地改变列表。这是因为它产生的引用的寿命与它自己的寿命有关，而不仅仅是与底层列表有关。这意味着光标不能一次产生多个元素。
 >
-> Cursors always rest between two elements in the list, and index in a logically circular way. To accomadate this, there is a "ghost" non-element that yields None between the head and tail of the List.
+> 游标总是停留在列表的两个元素之间，并以逻辑上的循环方式进行索引。为了适应这种情况，在列表的头部和尾部之间有一个 "幽灵" 非元素，产生 None。
 >
-> When created, cursors start between the ghost and the front of the list. That is, next will yield the front of the list, and prev will yield None. Calling prev again will yield the tail.
+> 当创建时，光标从幽灵和列表的前面开始。也就是说，next 将产生列表的前面，prev 将产生 None。再次调用 prev 将产生尾部。
 
-Cute, even though we concluded that the whole "sentinel-node" thing was more trouble than it's worth, we're still going to end up with semantics that "pretend" there's a sentinel node so that the cursor can wrap around to the other side of the list.
+很可爱，尽管我们得出结论，整个 "哨兵节点" 的事情比它的价值更麻烦，我们仍然要用语义来 "假装" 有一个哨兵节点，这样光标就可以绕到列表的另一边了。
 
-*Skims over my old APIs some more*
+*对我的旧API再进行一些分析*
 
 ```rust ,ignore
 fn splice(&mut self, other: &mut LinkedList<T>)
 ```
 
-> Inserts the entire list's contents right after the cursor.
+> 在光标之后插入整个列表的内容。
 
-Oh yeah, this is coming back to me. I wrote this when I was really mad about combinatoric explosion, and was trying to come up with a way for there to only be one copy of each operation. Unfortunately this is... semantically problematic. See, when the user wants to splice one list into another, they might want the cursor to end up *before* the splice or *after it*. The inserted list can be arbitrarily large, so it's a genuine issue for us to only allow for one and expect the user to walk over the entire inserted list!
+哦，对了，这又回到我身上了。我写这个的时候，我对组合爆炸非常生气，并试图想出一种方法，使每个操作只有一个副本。不幸的是，这......在语义上是有问题的。你看，当用户想把一个列表拼接到另一个列表时，他们可能希望光标在拼接*之前*或*之后*结束。插入的列表可以是任意大的，所以如果我们只允许一个列表，并希望用户在整个插入的列表上行走，这确实是个问题！我们必须重新设计。
 
-We're gonna have to rework this design from the ground up after all. What does our Cursor type need? Well it needs to:
+我们毕竟要从头开始重新设计这个设计。我们的光标类型需要什么？嗯，它需要:
 
-* point "between" two elements
-* as a nice little feature, keep track of what "index" is next
-* update the list itself to modify front/back/len. 
+* 指向两个元素"之间"
+* 作为一个很好的小功能，跟踪下一个 "索引" 是什么
+* 更新列表本身以修改 front/back/len。
 
-How do you point between two elements? Well, you don't. You just point at the "next" element. So, yeah even though we're exposing "cursor goes in-between" semantics, we're really implementing it as "cursor is on", and just pretending everything happens before or after that point.
+你如何指向两个元素之间？嗯，你不需要。你只是指向 "下一个" 元素。所以，是的，即使我们暴露了 "光标在中间" 的语义，我们实际上是把它实现为 "光标在元素上"，只是假装一切都发生在那个点之前或之后。
 
-But there's a reason! The splice use-case wants to let the user choose whether they end up before or after the list, but this is... *horribly* complicated to express with the std API! They have splice_after and splice_before, but neither changes the cursor's position, so really you'd need splice_after_before and splice_after_after...
+但这是有原因的! 拼接的用例希望让用户选择他们是在列表的前面还是后面结束，但是这... 用标准的API来表达是*非常*复杂的!  他们有 splice_after 和 splice_before, 但都没有改变光标的位置，所以实际上你需要 splice_after_before 和 splice_after_after ...
 
-Wait no I'm being silly. In the std API you can just choose the node you want to end up on, and then use splice_after/before as appropriate.
+等等，不，我太傻了。在标准的API中，你可以只选择你想结束的节点，然后根据情况使用 splice_after/before。
 
-*squints*
+*斜眼*
 
-Wait is the std API actually good.
+等等，标准的API实际上是好的。
 
-*skims through the code*
+*仔细阅读代码*
 
-Ok the std API is actually good.
+好吧，标准的API实际上是好的。
 
-Alright screw it, we're going to [implement the RFC](https://github.com/rust-lang/rfcs/blob/master/text/2570-linked-list-cursors.md). Or at least the interesting parts of it.
+好吧，去它的，我们要去[实现RFC](https://github.com/rust-lang/rfcs/blob/master/text/2570-linked-list-cursors.md)。或者至少是它的有趣部分。
 
-I have my quibbles with some of the terminology std uses, but cursors are always going to be a bit brain-melty: `iter().next_back()`  gets you `back()`, so that's good, but then each subsequent `next_back()` is actually bringing you *closer to the front* and indeed, every pointer we follow is a "front" pointer! If I think about this seeming-paradox too much it hurts my brain, so, I can certainly respect going for different terminology to avoid this.
+我对 std 使用的一些术语有异议，但光标总是有点令人费解：`iter().next_back()`让你`back()`，这很好，但随后的每一个`next_back()`实际上是让你*接近前面*，事实上，我们跟踪的每个指针都是一个 "前面" 指针 如果我对这个看似矛盾的问题想得太多，就会伤害我的大脑，所以，我当然尊重用不同的术语来避免这个问题。
 
-The std API talks about operations before "before" (towards the front) and "after" (towards the back), and instead of `next` and `next_back`, it... calls things `move_next` and `move_prev`. HRM. Ok so they're getting into a bit of the iterator terminology, but at least `next` doesn't evoke front/back, and helps you orient how things behave compared to the iterators.
+std API谈到了在 "前"（朝前）和  "后"（朝后）的操作，而不是`next`和`next_back`，它...称之为`move_next`和`move_prev`。嗯。好吧，他们有点陷入了迭代器的术语，但至少`next`没有唤起front/back，并且能帮助你确定与迭代器类似事物的行为。
 
-We can work with this.
+我们可以接受这个。

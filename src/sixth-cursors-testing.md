@@ -1,8 +1,8 @@
-# Testing Cursors
+# 测试光标 
 
-Time to find out how many horribly embarassing mistakes I made in the previous section!
+是时候发现我在上一节中犯了多少可怕的令人尴尬的错误了!
 
-Oh god we made our API unlike both std and the old impl. Alright well I'm just gonna hastily cobble together something from both of them. Yeah let's "borrow" these tests from std:
+哦，天哪，我们的API与std和旧的impl都不一样。好吧，那我就从这两个地方匆匆忙忙地拼凑一下吧。是的，让我们从std中 "借用" 这些测试:
 
 ```rust ,ignore
     #[test]
@@ -120,7 +120,7 @@ Oh god we made our API unlike both std and the old impl. Alright well I'm just g
     }
 ```
 
-Moment of truth!
+真相时刻！
 
 ```text
 cargo test
@@ -166,9 +166,11 @@ failures:
 test result: FAILED. 12 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
 
-I'll admit, I had some hubris here and was hoping I nailed it. This is why we write tests (but maybe I just did a bad job of porting the tests..?).
 
-What's the first failure?
+我承认，我在这里有一些傲慢，并希望我把它钉死。这就是我们写测试的原因（但也许我只是在移植测试方面做得不好...？）
+
+第一个失败是什么？
+
 
 ```rust ,ignore
 let mut m: LinkedList<u32> = LinkedList::new();
@@ -186,11 +188,11 @@ assert_eq!(cursor.current(), None);
 assert_eq!(cursor.peek_next(), Some(&mut 1)); // DIES HERE
 ```
 
-Geez I really messed up some basic functionality. Wait,
+天啊，我真的搞砸了一些基本功能。等等。
 
-> Head empty, Option methods and (omitted) compiler errors do all thinking now.
+> 头空，选项方法和（省略）编译器错误现在都在思考。
 
-Well I am nothing if not honest.
+好吧，如果不诚实的话，我就什么都不是。
 
 ```rust ,ignore
 pub fn peek_next(&mut self) -> Option<&mut T> {
@@ -202,7 +204,8 @@ pub fn peek_next(&mut self) -> Option<&mut T> {
 }
 ```
 
-...Yeah this is just wrong. If `self.cur` is None, we aren't just supposed to give up, we need to check `self.list.front` too, because we're on the ghost! So we just need to add an or_else to the chain:
+...是的，这就是错误的。如果`self.cur`是None，我们不应该只是放弃，我们还需要检查`self.list.front`，因为我们是在幽灵上！所以我们只需要在链上添加一个or_else：`self.cur`:
+
 
 ```rust ,ignore
 pub fn peek_next(&mut self) -> Option<&mut T> {
@@ -224,7 +227,7 @@ pub fn peek_prev(&mut self) -> Option<&mut T> {
 }
 ```
 
-Did that fix it?
+这样就解决了吗？
 
 ```text
 ---- test::test_cursor_move_peek stdout ----
@@ -233,7 +236,7 @@ thread 'test::test_cursor_move_peek' panicked at 'assertion failed: `(left == ri
  right: `None`', src\lib.rs:1078:9
 ```
 
-Wait now it's wrong *further back*. Ok I need to stop head-emptying peek because apparently it's a lot harder than I was willing to give it credit for. Just trying to blindly chain these cases is a disaster, let's have a proper if for the cases of ghost vs not:
+等等，现在它错了 *再往后* 。好吧，我需要停止对空的头 peek，因为显然这比我愿意给它的努力要难得多。仅仅试图盲目地把这些情况联系起来是一场灾难，让我们对幽灵与非幽灵的情况有一个适当的if:
 
 ```rust ,ignore
 pub fn peek_next(&mut self) -> Option<&mut T> {
@@ -267,7 +270,7 @@ pub fn peek_prev(&mut self) -> Option<&mut T> {
 }
 ```
 
-Feelin' confident about this one!
+对这一次感到很有信心!
 
 ```text
 failures:
@@ -285,9 +288,9 @@ failures:
 test result: FAILED. 13 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
 
-Yesss. Ok one more failure to go... oh.
+是的。好吧，还有一个失败...哦。
 
-Did you notice the part where I commented out some code for testing remove_current? Yeah I wasn't paying attention to the fact that this test is stateful. Let's just create a new list with the state the remove_current part would have left us in:
+你注意到我在测试 remove_current 时注释了一些代码的部分吗？是的，我没有注意到这个测试是有状态的。让我们用 remove_current 部分留给我们的状态来创建一个新的列表:
 
 ```rust ,ignore
 let mut m: LinkedList<u32> = LinkedList::new();
@@ -326,7 +329,7 @@ test src\lib.rs - assert_properties::iter_mut_invariant (line 803) - compile fai
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
 ```
 
-Heyyyy look at thaaat... ok now I'm getting paranoid. Let's properly fill in check_links and test it under miri:
+嘿嘿，看看这个......好吧，现在我开始疑神疑鬼了。让我们正确填写check_links，并在miri下测试:
 
 ```rust ,ignore
 fn check_links<T: Eq + std::fmt::Debug>(list: &LinkedList<T>) {
@@ -338,7 +341,7 @@ fn check_links<T: Eq + std::fmt::Debug>(list: &LinkedList<T>) {
 }
 ```
 
-Is this the best way to do this? No. Is it fine? Yes.
+这是最好的方法吗？不，这还好吗？是的。
 
 ```text
 $env:MIRIFLAGS="-Zmiri-tag-raw-pointers"
@@ -373,17 +376,17 @@ test src\lib.rs - assert_properties::iter_mut_invariant (line 803) - compile fai
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
 ```
 
-DONE.
+完成了。
 
-Done.
+完成了。
 
-We did it. We made a god damn production-quality LinkedList, with basically all the same functionality as the one in std. Are we missing little convenience methods here and there? Absolutely. Will I add them into the final published version of the crate? Probably!
+我们做到了。我们做了一个该死的、具有产品级质量的LinkedList，其功能基本上与std中的LinkedList相同。我们是否在这里和那里遗漏了一些方便的方法？当然有。我是否会将它们添加到最终发布的版本中？可能会！
 
-But, I am, So Very Tired.
+但是，我，非常累了。
 
-So. We win.
+所以。我们赢了。
 
-Wait fuck. We're being production quality. Ok one last final boss: clippy.
+等等，他妈的。我们是产品级质量。好吧，最后一个 boss：Clippy。
 
 ```text
 cargo clippy
@@ -440,26 +443,26 @@ warning: `linked-list` (lib) generated 4 warnings
     Finished dev [unoptimized + debuginfo] target(s) in 0.29s
 ```
 
-Alright clippy, let's do this.
 
-Complaint 1 (and 3): we use `while let Some(_) = ` instead of `while .is_some()`. The loop is empty so this truly doesn't matter but ok fine, clippy, I'll do things your way.
+好吧，clippy，我们来做这个。
 
-Complaint 2: We have an actual inherent into_iter method. Wait, what *checks std* ok, point to clippy. IntoIterator is in the prelude (and basically a lang item) so, we don't need an inherent version too.
+抱怨1（和3）：我们使用`while let Some(_) = `而不是`while .is_some()`。循环是空的，所以这真的不重要，但好吧，clippy，我按你的方法做。
 
-Complaint 4: we copied a weird cargocult from std. *shrug* fine I'll remove it.
+抱怨2：我们实际上有一个内置的into_iter方法。等等，什么*检查std*好的，指给clippy看。IntoIterator在prelude中（而且基本上是一个lang项），所以，我们不需要一个内置的版本。
+
+抱怨4：我们从std中复制了一个奇怪的cargocult。*耸耸肩*好吧，我会删除它。
 
 ```text
 cargo clippy
     Finished dev [unoptimized + debuginfo] target(s) in 0.00s
 ```
 
-Nice. Just one last thing to do before calling it production quality: fmt.
+很好。在称其为产品级质量之前，只有最后一件事要做：Fmt。
 
 ```text
 cargo fmt
 ```
 
-...yeah it added some newlines and removed some trailing whitespace. Nothing interesting.
+...是的，它添加了一些换行，并删除了一些尾部的空白。没什么意思。
 
-**WE ARE NOW TRULY FINALLY DONE!!!!!!!!!!!!!!!!!!!!!**
-
+**我们现在真的终于完成了!!!!!!!!!!!!!!!!!!!!!**
